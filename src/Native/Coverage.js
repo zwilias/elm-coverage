@@ -45,31 +45,68 @@ var _user$project$Native_Coverage = (function() {
 
     if (process) {
         process.on("exit", function() {
+            var coverageMap = {
+                declarations: {
+                    map: declarationCounter,
+                    desc: "top-level declarations used",
+                    used: 0,
+                    total: 0
+                },
+                caseBranches: {
+                    map: caseBranchCounter,
+                    desc: "case patterns matched",
+                    used: 0,
+                    total: 0
+                },
+                ifElseBranches: {
+                    map: ifElseCounter,
+                    desc: "if/else branches entered",
+                    used: 0,
+                    total: 0
+                },
+                expressions: {
+                    map: expressionCounter,
+                    desc: "expressions evaluated",
+                    used: 0,
+                    total: 0
+                }
+            };
+
+            var info = [
+                "declarations",
+                "caseBranches",
+                "ifElseBranches",
+                "expressions"
+            ];
+
+            console.log();
             for (var fileIdentifier in fileMap) {
-                console.log("Stats for " + fileMap[fileIdentifier]);
+                console.log("Coverage for " + fileMap[fileIdentifier]);
                 console.log();
 
-                printTopLevelUsage(
-                    declarationCounter[fileIdentifier],
-                    "top-level declarations used"
-                );
-                printTopLevelUsage(
-                    caseBranchCounter[fileIdentifier],
-                    "case patterns matched"
-                );
-                printTopLevelUsage(
-                    ifElseCounter[fileIdentifier],
-                    "if/else branches entered"
-                );
-                printTopLevelUsage(
-                    expressionCounter[fileIdentifier],
-                    "expressions evaluated"
-                );
+                for (var infoKey of info) {
+                    var usage = getUsage(coverageMap[infoKey].map[fileIdentifier]);
+                    coverageMap[infoKey].used += usage.used;
+                    coverageMap[infoKey].total += usage.total;
+
+                    printUsage(4, usage, coverageMap[infoKey].desc);
+                }
+
+                console.log();
             }
+
+            console.log("Total coverage");
+            console.log();
+
+            for (var infoKey of info) {
+                printUsage(4, coverageMap[infoKey], coverageMap[infoKey].desc);
+            }
+
+            console.log();
         });
     }
 
-    function printTopLevelUsage(counter, name) {
+    function getUsage(counter) {
         var total = 0;
         var used = 0;
 
@@ -80,15 +117,20 @@ var _user$project$Native_Coverage = (function() {
             }
         }
 
-        var percentUsed = Math.round(used / total * 100);
+        return { used: used, total: total };
+    }
+
+    function printUsage(pad, usage, name) {
+        var percentUsed = Math.round(usage.used / usage.total * 100);
+
         console.log(
-            String(percentUsed).padStart(3) +
+            String(percentUsed).padStart(pad + 3) +
                 "% " +
                 name +
                 " (" +
-                used +
+                usage.used +
                 "/" +
-                total +
+                usage.total +
                 ")"
         );
     }
