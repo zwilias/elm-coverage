@@ -7,47 +7,47 @@ import Native.Coverage
 unusedFunction : String -> Int
 unusedFunction input =
     Native.Coverage.declaration 0 <|
-        Native.Coverage.expr 0 <|
+        Native.Coverage.expression 0 <|
             String.length input
 
 
 isLowerString : String -> Bool
 isLowerString string =
     Native.Coverage.declaration 1 <|
-        Native.Coverage.expr 2 <|
-            isLowerStringHelper (Native.Coverage.expr 1 (String.toList string))
+        Native.Coverage.expression 2 <|
+            isLowerStringHelper (Native.Coverage.expression 1 (String.toList string))
 
 
 isLowerStringHelper : List Char -> Bool
 isLowerStringHelper charList =
     Native.Coverage.declaration 2 <|
-        Native.Coverage.expr 3 <|
-            case Native.Coverage.expr 4 charList of
+        Native.Coverage.expression 3 <|
+            case Native.Coverage.expression 4 charList of
                 [] ->
                     Native.Coverage.caseBranch 0 <|
-                        Native.Coverage.expr 5 False
+                        Native.Coverage.expression 5 False
 
                 [ x ] ->
                     Native.Coverage.caseBranch 1 <|
-                        Native.Coverage.expr 6 <|
-                            if Native.Coverage.expr 7 <| Char.isLower x then
+                        Native.Coverage.expression 6 <|
+                            if Native.Coverage.expression 7 <| Char.isLower x then
                                 let
                                     _ =
-                                        Native.Coverage.bool 0
+                                        Native.Coverage.ifBranch 0
                                 in
-                                Native.Coverage.expr 8 True
+                                Native.Coverage.expression 8 True
                             else
                                 let
                                     _ =
-                                        Native.Coverage.bool 1
+                                        Native.Coverage.ifBranch 1
                                 in
-                                Native.Coverage.expr 9 False
+                                Native.Coverage.expression 9 False
 
                 x :: xs ->
                     Native.Coverage.caseBranch 2 <|
-                        Native.Coverage.expr 10 <|
-                            (Native.Coverage.expr 11 <| Char.isLower x)
-                                && (Native.Coverage.expr 12 <| isLowerStringHelper xs)
+                        Native.Coverage.expression 10 <|
+                            (Native.Coverage.expression 11 <| Char.isLower x)
+                                && (Native.Coverage.expression 12 <| isLowerStringHelper xs)
 
 
 expressions : ()

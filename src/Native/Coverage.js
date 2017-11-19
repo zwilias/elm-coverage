@@ -8,31 +8,29 @@ var _user$project$Native_Coverage = (function() {
     var exprCounter = {};
 
     function makeCounter(counter) {
-        return function (id, expression) {
+        return F2(function (id, expression) {
             counter[id] = counter[id] || 0;
             counter[id] += 1;
 
             return expression;
-        }
+        });
     }
 
     var declaration = makeCounter(declarationCounter);
     var caseBranch = makeCounter(caseBranchCounter);
-    var bool = makeCounter(ifElseCounter);
-    var expr = makeCounter(exprCounter);
+    var ifBranch = makeCounter(ifElseCounter);
+    var expression = makeCounter(exprCounter);
+
+    function initCounter(info, counter) {
+        List.toArray(info).forEach(function(fileOffset, idx) {
+            counter[idx] = counter[idx] || 0;
+        });
+    }
 
     var init = function(declarations, caseBranches, ifElseBranches, expressions) {
-        List.toArray(declarations).forEach(function(fileOffset, idx) {
-            declarationCounter[idx] = declarationCounter[idx] || 0;
-        });
-
-        List.toArray(caseBranches).forEach(function(fileOffset, idx) {
-            caseBranchCounter[idx] = caseBranchCounter[idx] || 0;
-        });
-
-        List.toArray(ifElseBranches).forEach(function(fileOffset, idx) {
-            ifElseCounter[idx] = ifElseCounter[idx] || 0;
-        });
+        initCounter(declarations, declarationCounter);
+        initCounter(caseBranches, caseBranchCounter);
+        initCounter(ifElseBranches, ifElseCounter);
 
         for (var i = 0; i < expressions; i++) {
             exprCounter[i] = exprCounter[i] || 0;
@@ -75,10 +73,10 @@ var _user$project$Native_Coverage = (function() {
     }
 
     return {
-        declaration: F2(declaration),
-        caseBranch: F2(caseBranch),
-        bool: F2(bool),
-        expr: F2(expr),
+        declaration: declaration,
+        caseBranch: caseBranch,
+        ifBranch: ifBranch,
+        expression: expression,
         init: F4(init)
     };
 })();
