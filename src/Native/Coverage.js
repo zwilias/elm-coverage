@@ -2,21 +2,12 @@ var _user$project$Native_Coverage = (function() {
     var List = _elm_lang$core$Native_List;
     var Utils = _elm_lang$core$Native_Utils;
 
-    var tldeclCounter = {};
+    var declarationCounter = {};
     var caseBranchCounter = {};
     var ifElseCounter = {};
     var exprCounter = {};
 
-    function makeNullaryCounter(counter) {
-        return function (id) {
-            counter[id] = counter[id] || 0;
-            counter[id] += 1;
-
-            return Utils.Tuple0;
-        }
-    }
-
-    function makeExpressionCounter(counter) {
+    function makeCounter(counter) {
         return function (id, expression) {
             counter[id] = counter[id] || 0;
             counter[id] += 1;
@@ -25,14 +16,14 @@ var _user$project$Native_Coverage = (function() {
         }
     }
 
-    var tldecl = makeNullaryCounter(tldeclCounter);
-    var caseBranch = makeNullaryCounter(caseBranchCounter);
-    var bool = makeNullaryCounter(ifElseCounter);
-    var expr = makeExpressionCounter(exprCounter);
+    var declaration = makeCounter(declarationCounter);
+    var caseBranch = makeCounter(caseBranchCounter);
+    var bool = makeCounter(ifElseCounter);
+    var expr = makeCounter(exprCounter);
 
     var init = function(declarations, caseBranches, ifElseBranches, expressions) {
         List.toArray(declarations).forEach(function(fileOffset, idx) {
-            tldeclCounter[idx] = tldeclCounter[idx] || 0;
+            declarationCounter[idx] = declarationCounter[idx] || 0;
         });
 
         List.toArray(caseBranches).forEach(function(fileOffset, idx) {
@@ -52,7 +43,7 @@ var _user$project$Native_Coverage = (function() {
 
     if (process) {
         process.on("exit", function() {
-            printTopLevelUsage(tldeclCounter, "top-level declarations used");
+            printTopLevelUsage(declarationCounter, "top-level declarations used");
             printTopLevelUsage(caseBranchCounter, "case patterns matched");
             printTopLevelUsage(ifElseCounter, "if/else branches entered");
             printTopLevelUsage(exprCounter, "expressions evaluated");
@@ -84,9 +75,9 @@ var _user$project$Native_Coverage = (function() {
     }
 
     return {
-        tldecl: tldecl,
-        caseBranch: caseBranch,
-        bool: bool,
+        declaration: F2(declaration),
+        caseBranch: F2(caseBranch),
+        bool: F2(bool),
         expr: F2(expr),
         init: F4(init)
     };

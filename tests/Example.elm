@@ -23,10 +23,9 @@ singleChar =
                 |> Expect.equal False
 
 
-
--- fuzzer : Test
--- fuzzer =
---     fuzz string "fuzzed string" <|
---         \input ->
---             TestMe.isLowerString input
---                 |> Expect.equal ((not <| String.isEmpty input) && String.all Char.isLower input)
+fuzzer : Test
+fuzzer =
+    fuzz string "fuzzed string" <|
+        \input ->
+            TestMe.isLowerString input
+                |> Expect.equal ((not <| String.isEmpty input) && String.all Char.isLower input)
