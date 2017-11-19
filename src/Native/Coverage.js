@@ -5,12 +5,14 @@ var _user$project$Native_Coverage = (function() {
     var declarationCounter = {};
     var caseBranchCounter = {};
     var ifElseCounter = {};
-    var exprCounter = {};
+    var expressionCounter = {};
+    var fileMap = {};
 
     function makeCounter(counter) {
-        return F2(function (id, expression) {
-            counter[id] = counter[id] || 0;
-            counter[id] += 1;
+        return F3(function(fileIdentifier, id, expression) {
+            counter[fileIdentifier] = counter[fileIdentifier] || {};
+            counter[fileIdentifier][id] = counter[fileIdentifier][id] || 0;
+            counter[fileIdentifier][id] += 1;
 
             return expression;
         });
@@ -18,35 +20,52 @@ var _user$project$Native_Coverage = (function() {
 
     var declaration = makeCounter(declarationCounter);
     var caseBranch = makeCounter(caseBranchCounter);
-    var ifBranch = makeCounter(ifElseCounter);
-    var expression = makeCounter(exprCounter);
+    var ifElseBranch = makeCounter(ifElseCounter);
+    var expression = makeCounter(expressionCounter);
 
-    function initCounter(info, counter) {
+    function initCounter(fileIdentifier, info, counter) {
         List.toArray(info).forEach(function(fileOffset, idx) {
-            counter[idx] = counter[idx] || 0;
+            counter[fileIdentifier] = counter[fileIdentifier] || {};
+            counter[fileIdentifier][idx] = counter[fileIdentifier][idx] || 0;
         });
     }
 
-    var init = function(declarations, caseBranches, ifElseBranches, expressions) {
-        initCounter(declarations, declarationCounter);
-        initCounter(caseBranches, caseBranchCounter);
-        initCounter(ifElseBranches, ifElseCounter);
+    var init = function(moduleName, fileIdentifier, settings) {
+        fileMap[fileIdentifier] = moduleName;
 
-        for (var i = 0; i < expressions; i++) {
-            exprCounter[i] = exprCounter[i] || 0;
-        }
+        initCounter(fileIdentifier, settings.declarations, declarationCounter);
+        initCounter(fileIdentifier, settings.caseBranches, caseBranchCounter);
+        initCounter(fileIdentifier, settings.ifElseBranches, ifElseCounter);
+        initCounter(fileIdentifier, settings.expressions, expressionCounter);
 
-        return function () {
-            throw new Error('... No.');
+        return function() {
+            throw new Error("... No.");
         };
     };
 
     if (process) {
         process.on("exit", function() {
-            printTopLevelUsage(declarationCounter, "top-level declarations used");
-            printTopLevelUsage(caseBranchCounter, "case patterns matched");
-            printTopLevelUsage(ifElseCounter, "if/else branches entered");
-            printTopLevelUsage(exprCounter, "expressions evaluated");
+            for (var fileIdentifier in fileMap) {
+                console.log("Stats for " + fileMap[fileIdentifier]);
+                console.log();
+
+                printTopLevelUsage(
+                    declarationCounter[fileIdentifier],
+                    "top-level declarations used"
+                );
+                printTopLevelUsage(
+                    caseBranchCounter[fileIdentifier],
+                    "case patterns matched"
+                );
+                printTopLevelUsage(
+                    ifElseCounter[fileIdentifier],
+                    "if/else branches entered"
+                );
+                printTopLevelUsage(
+                    expressionCounter[fileIdentifier],
+                    "expressions evaluated"
+                );
+            }
         });
     }
 
@@ -77,8 +96,8 @@ var _user$project$Native_Coverage = (function() {
     return {
         declaration: declaration,
         caseBranch: caseBranch,
-        ifBranch: ifBranch,
+        ifElseBranch: ifElseBranch,
         expression: expression,
-        init: F4(init)
+        init: F3(init)
     };
 })();

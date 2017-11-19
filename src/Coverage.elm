@@ -3,26 +3,42 @@ module Coverage exposing (..)
 import Native.Coverage
 
 
-expression : Int -> a -> a
+type alias Identifier =
+    { startPos : ( Int, Int )
+    , endPos : ( Int, Int )
+    }
+
+
+expression : Int -> Int -> a -> a
 expression =
     Native.Coverage.expression
 
 
-declaration : Int -> a -> a
+declaration : Int -> Int -> a -> a
 declaration =
     Native.Coverage.declaration
 
 
-caseBranch : Int -> a -> a
+caseBranch : Int -> Int -> a -> a
 caseBranch =
     Native.Coverage.caseBranch
 
 
-ifBranch : Int -> a -> a
-ifBranch =
-    Native.Coverage.ifBranch
+ifElseBranch : Int -> Int -> a -> a
+ifElseBranch =
+    Native.Coverage.ifElseBranch
 
 
-init : List Int -> List Int -> List Int -> Int -> Never -> a
+init :
+    String
+    -> Int
+    ->
+        { expressions : List Identifier
+        , declarations : List Identifier
+        , caseBranches : List Identifier
+        , ifElseBranches : List Identifier
+        }
+    -> Never
+    -> a
 init =
     Native.Coverage.init
