@@ -1,58 +1,52 @@
 module TestMe exposing (..)
 
 import Char
-import Native.Coverage
+import Coverage
 
 
 unusedFunction : String -> Int
 unusedFunction input =
-    Native.Coverage.declaration 0 <|
-        Native.Coverage.expression 0 <|
+    Coverage.declaration 0 <|
+        Coverage.expression 0 <|
             String.length input
 
 
 isLowerString : String -> Bool
 isLowerString string =
-    Native.Coverage.declaration 1 <|
-        Native.Coverage.expression 2 <|
-            isLowerStringHelper (Native.Coverage.expression 1 (String.toList string))
+    Coverage.declaration 1 <|
+        Coverage.expression 2 <|
+            isLowerStringHelper (Coverage.expression 1 (String.toList string))
 
 
 isLowerStringHelper : List Char -> Bool
 isLowerStringHelper charList =
-    Native.Coverage.declaration 2 <|
-        Native.Coverage.expression 3 <|
-            case Native.Coverage.expression 4 charList of
+    Coverage.declaration 2 <|
+        Coverage.expression 3 <|
+            case Coverage.expression 4 charList of
                 [] ->
-                    Native.Coverage.caseBranch 0 <|
-                        Native.Coverage.expression 5 False
+                    Coverage.caseBranch 0 <|
+                        Coverage.expression 5 False
 
                 [ x ] ->
-                    Native.Coverage.caseBranch 1 <|
-                        Native.Coverage.expression 6 <|
-                            if Native.Coverage.expression 7 <| Char.isLower x then
-                                let
-                                    _ =
-                                        Native.Coverage.ifBranch 0
-                                in
-                                Native.Coverage.expression 8 True
+                    Coverage.caseBranch 1 <|
+                        Coverage.expression 6 <|
+                            if Coverage.expression 7 <| Char.isLower x then
+                                Coverage.ifBranch 0 <|
+                                    Coverage.expression 8 True
                             else
-                                let
-                                    _ =
-                                        Native.Coverage.ifBranch 1
-                                in
-                                Native.Coverage.expression 9 False
+                                Coverage.ifBranch 1 <|
+                                    Coverage.expression 9 False
 
                 x :: xs ->
-                    Native.Coverage.caseBranch 2 <|
-                        Native.Coverage.expression 10 <|
-                            (Native.Coverage.expression 11 <| Char.isLower x)
-                                && (Native.Coverage.expression 12 <| isLowerStringHelper xs)
+                    Coverage.caseBranch 2 <|
+                        Coverage.expression 10 <|
+                            (Coverage.expression 11 <| Char.isLower x)
+                                && (Coverage.expression 12 <| isLowerStringHelper xs)
 
 
-expressions : ()
+expressions : Never -> a
 expressions =
-    Native.Coverage.init
+    Coverage.init
         -- top level declarations
         [ 7, 12, 17 ]
         -- case patterns

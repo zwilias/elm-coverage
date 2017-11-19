@@ -36,7 +36,9 @@ var _user$project$Native_Coverage = (function() {
             exprCounter[i] = exprCounter[i] || 0;
         }
 
-        return Utils.Tuple0;
+        return function () {
+            throw new Error('... No.');
+        };
     };
 
     if (process) {
