@@ -44,8 +44,8 @@ isLowerStringHelper charList =
                                 && (Coverage.expression 12 <| isLowerStringHelper xs)
 
 
-expressions : Never -> a
-expressions =
+initCoverage : Never -> a
+initCoverage =
     Coverage.init
         -- top level declarations
         [ 7, 12, 17 ]
