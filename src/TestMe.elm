@@ -6,49 +6,48 @@ import Coverage
 
 unusedFunction : String -> Int
 unusedFunction input =
-    Coverage.declaration 0 0 <|
-        Coverage.expression 0 0 <|
+    Coverage.declaration "TestMe" 0 <|
+        Coverage.expression "TestMe" 0 <|
             String.length input
 
 
 isLowerString : String -> Bool
 isLowerString string =
-    Coverage.declaration 0 1 <|
-        Coverage.expression 0 2 <|
-            isLowerStringHelper (Coverage.expression 0 1 (String.toList string))
+    Coverage.declaration "TestMe" 1 <|
+        Coverage.expression "TestMe" 2 <|
+            isLowerStringHelper (Coverage.expression "TestMe" 1 (String.toList string))
 
 
 isLowerStringHelper : List Char -> Bool
 isLowerStringHelper charList =
-    Coverage.declaration 0 2 <|
-        Coverage.expression 0 12 <|
-            case Coverage.expression 0 11 charList of
+    Coverage.declaration "TestMe" 2 <|
+        Coverage.expression "TestMe" 12 <|
+            case Coverage.expression "TestMe" 11 charList of
                 [] ->
-                    Coverage.caseBranch 0 0 <|
-                        Coverage.expression 0 3 False
+                    Coverage.caseBranch "TestMe" 0 <|
+                        Coverage.expression "TestMe" 3 False
 
                 [ x ] ->
-                    Coverage.caseBranch 0 1 <|
-                        Coverage.expression 0 7 <|
-                            if Coverage.expression 0 5 <| Char.isLower x then
-                                Coverage.ifElseBranch 0 0 <|
-                                    Coverage.expression 0 4 True
+                    Coverage.caseBranch "TestMe" 1 <|
+                        Coverage.expression "TestMe" 7 <|
+                            if Coverage.expression "TestMe" 5 <| Char.isLower x then
+                                Coverage.ifElseBranch "TestMe" 0 <|
+                                    Coverage.expression "TestMe" 4 True
                             else
-                                Coverage.ifElseBranch 0 1 <|
-                                    Coverage.expression 0 6 False
+                                Coverage.ifElseBranch "TestMe" 1 <|
+                                    Coverage.expression "TestMe" 6 False
 
                 x :: xs ->
-                    Coverage.caseBranch 0 2 <|
-                        Coverage.expression 0 10 <|
-                            (Coverage.expression 0 8 <| Char.isLower x)
-                                && (Coverage.expression 0 9 <| isLowerStringHelper xs)
+                    Coverage.caseBranch "TestMe" 2 <|
+                        Coverage.expression "TestMe" 10 <|
+                            (Coverage.expression "TestMe" 8 <| Char.isLower x)
+                                && (Coverage.expression "TestMe" 9 <| isLowerStringHelper xs)
 
 
 initCoverage : Never -> a
 initCoverage =
     Coverage.init
         "TestMe"
-        0
         { expressions =
             [ Coverage.Identifier ( 8, 5 ) ( 8, 24 )
             , Coverage.Identifier ( 13, 25 ) ( 13, 47 )

@@ -9,35 +9,33 @@ type alias Identifier =
     }
 
 
-expression : Int -> Int -> a -> a
+expression : String -> Int -> a -> a
 expression =
     Native.Coverage.expression
 
 
-declaration : Int -> Int -> a -> a
+declaration : String -> Int -> a -> a
 declaration =
     Native.Coverage.declaration
 
 
-caseBranch : Int -> Int -> a -> a
+caseBranch : String -> Int -> a -> a
 caseBranch =
     Native.Coverage.caseBranch
 
 
-ifElseBranch : Int -> Int -> a -> a
+ifElseBranch : String -> Int -> a -> a
 ifElseBranch =
     Native.Coverage.ifElseBranch
 
 
 init :
     String
-    -> Int
-    ->
-        { expressions : List Identifier
-        , declarations : List Identifier
-        , caseBranches : List Identifier
-        , ifElseBranches : List Identifier
-        }
+    -> { expressions : List Identifier
+       , declarations : List Identifier
+       , caseBranches : List Identifier
+       , ifElseBranches : List Identifier
+       }
     -> Never
     -> a
 init =
