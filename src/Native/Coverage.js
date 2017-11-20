@@ -11,8 +11,8 @@ var _user$project$Native_Coverage = (function() {
     function makeCounter(counter) {
         return F3(function(moduleName, id, expression) {
             counter[moduleName] = counter[moduleName] || {};
-            counter[moduleName][id] = counter[moduleName][id] || 0;
-            counter[moduleName][id] += 1;
+            counter[moduleName][id] = counter[moduleName][id] || { count: 0 };
+            counter[moduleName][id].count += 1;
 
             return expression;
         });
@@ -24,9 +24,17 @@ var _user$project$Native_Coverage = (function() {
     var expression = makeCounter(expressionCounter);
 
     function initCounter(moduleName, info, counter) {
-        List.toArray(info).forEach(function(fileOffset, idx) {
+        List.toArray(info).forEach(function(info, idx) {
+            var location = {
+                from: { line: info.startPos._0, column: info.startPos._1 },
+                to: { line: info.endPos._0, column: info.endPos._1 }
+            };
+
             counter[moduleName] = counter[moduleName] || {};
-            counter[moduleName][idx] = counter[moduleName][idx] || 0;
+            counter[moduleName][idx] = counter[moduleName][idx] || {
+                location: location,
+                count: 0
+            };
         });
     }
 
@@ -79,12 +87,18 @@ var _user$project$Native_Coverage = (function() {
                 "expressions"
             ];
 
+            var countersByModule = {};
+
             console.log();
             for (var moduleName of fileMap) {
                 console.log("Coverage for module " + moduleName);
                 console.log();
+                countersByModule[moduleName] = {};
 
                 for (var infoKey of info) {
+                    countersByModule[moduleName][infoKey] =
+                        coverageMap[infoKey].map[moduleName];
+
                     var usage = getUsage(coverageMap[infoKey].map[moduleName]);
                     coverageMap[infoKey].used += usage.used;
                     coverageMap[infoKey].total += usage.total;
@@ -103,6 +117,10 @@ var _user$project$Native_Coverage = (function() {
             }
 
             console.log();
+            fs.writeFileSync(
+                "../../../../.coverage/coverage.json",
+                JSON.stringify(countersByModule)
+            );
         });
     }
 
@@ -113,7 +131,7 @@ var _user$project$Native_Coverage = (function() {
         for (var key in counter) {
             if (counter.hasOwnProperty(key)) {
                 total += 1;
-                used += counter[key] === 0 ? 0 : 1;
+                used += counter[key].count === 0 ? 0 : 1;
             }
         }
 
