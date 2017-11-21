@@ -29,12 +29,24 @@ ifElseBranch =
     Native.Coverage.ifElseBranch
 
 
+lambdaBody : String -> Int -> a -> a
+lambdaBody =
+    Native.Coverage.lambdaBody
+
+
+letDeclaration : String -> Int -> a -> a
+letDeclaration =
+    Native.Coverage.letDeclaration
+
+
 init :
     String
     -> { expressions : List Identifier
        , declarations : List Identifier
        , caseBranches : List Identifier
        , ifElseBranches : List Identifier
+       , lambdaBodies : List Identifier
+       , letDeclarations : List Identifier
        }
     -> Never
     -> a

@@ -2,14 +2,21 @@ var _user$project$Native_Coverage = (function() {
     var List = _elm_lang$core$Native_List;
     var Utils = _elm_lang$core$Native_Utils;
 
-    var declarationCounter = {};
-    var caseBranchCounter = {};
-    var ifElseCounter = {};
-    var expressionCounter = {};
+    // var declarationCounter = {};
+    // var letDeclarationCounter = {};
+    // var caseBranchCounter = {};
+    // var ifElseCounter = {};
+    // var expressionCounter = {};
+    // var lambdaBodyCounter = {};
+    var counters = {};
     var fileMap = [];
 
-    function makeCounter(counter) {
+    function makeCounter(counterName, description) {
+        counters[counterName] = { _used: 0, _total: 0, _description: description};
+
         return F3(function(moduleName, id, expression) {
+            var counter = counters[counterName];
+
             counter[moduleName] = counter[moduleName] || {};
             counter[moduleName][id] = counter[moduleName][id] || { count: 0 };
             counter[moduleName][id].count += 1;
@@ -18,10 +25,12 @@ var _user$project$Native_Coverage = (function() {
         });
     }
 
-    var declaration = makeCounter(declarationCounter);
-    var caseBranch = makeCounter(caseBranchCounter);
-    var ifElseBranch = makeCounter(ifElseCounter);
-    var expression = makeCounter(expressionCounter);
+    var expression = makeCounter("expressions", "expressions evaluated");
+    var declaration = makeCounter("declarations", "top-level declarations used");
+    var ifElseBranch = makeCounter("ifElseBranches", "if/else branches entered");
+    var caseBranch = makeCounter("caseBranches", "case..of branches entered");
+    var letDeclaration = makeCounter("letDeclarations", "let declarations used");
+    var lambdaBody = makeCounter("lambdaBodies", "lambdas evaluated");
 
     function initCounter(moduleName, info, counter) {
         List.toArray(info).forEach(function(info, idx) {
@@ -41,10 +50,9 @@ var _user$project$Native_Coverage = (function() {
     var init = function(moduleName, settings) {
         fileMap.push(moduleName);
 
-        initCounter(moduleName, settings.declarations, declarationCounter);
-        initCounter(moduleName, settings.caseBranches, caseBranchCounter);
-        initCounter(moduleName, settings.ifElseBranches, ifElseCounter);
-        initCounter(moduleName, settings.expressions, expressionCounter);
+        Object.keys(counters).forEach(function (counter) {
+            initCounter(moduleName, settings[counter], counters[counter]);
+        });
 
         return function() {
             throw new Error("... No.");
@@ -53,58 +61,25 @@ var _user$project$Native_Coverage = (function() {
 
     if (process) {
         process.on("exit", function() {
-            var coverageMap = {
-                declarations: {
-                    map: declarationCounter,
-                    desc: "top-level declarations used",
-                    used: 0,
-                    total: 0
-                },
-                caseBranches: {
-                    map: caseBranchCounter,
-                    desc: "case patterns matched",
-                    used: 0,
-                    total: 0
-                },
-                ifElseBranches: {
-                    map: ifElseCounter,
-                    desc: "if/else branches entered",
-                    used: 0,
-                    total: 0
-                },
-                expressions: {
-                    map: expressionCounter,
-                    desc: "expressions evaluated",
-                    used: 0,
-                    total: 0
-                }
-            };
-
-            var info = [
-                "declarations",
-                "caseBranches",
-                "ifElseBranches",
-                "expressions"
-            ];
-
             var countersByModule = {};
 
             console.log();
             for (var moduleName of fileMap) {
                 console.log("Coverage for module " + moduleName);
                 console.log();
+
                 countersByModule[moduleName] = {};
 
-                for (var infoKey of info) {
-                    countersByModule[moduleName][infoKey] =
-                        coverageMap[infoKey].map[moduleName];
+                Object.keys(counters).forEach(function (counterName) {
+                    var counter = counters[counterName];
+                    countersByModule[moduleName][counterName] = counter[moduleName];
 
-                    var usage = getUsage(coverageMap[infoKey].map[moduleName]);
-                    coverageMap[infoKey].used += usage.used;
-                    coverageMap[infoKey].total += usage.total;
+                    var usage = getUsage(counter[moduleName]);
+                    counter._used += usage.used;
+                    counter._total += usage.total;
 
-                    printUsage(4, usage, coverageMap[infoKey].desc);
-                }
+                    printUsage(4, usage, counter._description);
+                });
 
                 console.log();
             }
@@ -112,9 +87,10 @@ var _user$project$Native_Coverage = (function() {
             console.log("Total coverage");
             console.log();
 
-            for (var infoKey of info) {
-                printUsage(4, coverageMap[infoKey], coverageMap[infoKey].desc);
-            }
+            Object.keys(counters).forEach(function (counterName) {
+                var counter = counters[counterName];
+                printUsage(4, { used: counter._used, total: counter._total }, counter._description);
+            });
 
             console.log();
             fs.writeFileSync(
@@ -139,11 +115,13 @@ var _user$project$Native_Coverage = (function() {
     }
 
     function printUsage(pad, usage, name) {
-        var percentUsed = Math.round(usage.used / usage.total * 100);
+        var percentUsed = usage.total > 0
+            ? Math.round(usage.used / usage.total * 100) + "%"
+            : "";
 
         console.log(
-            String(percentUsed).padStart(pad + 3) +
-                "% " +
+            String(percentUsed).padStart(pad + 4) +
+                " " +
                 name +
                 " (" +
                 usage.used +
@@ -155,9 +133,11 @@ var _user$project$Native_Coverage = (function() {
 
     return {
         declaration: declaration,
+        letDeclaration: letDeclaration,
         caseBranch: caseBranch,
         ifElseBranch: ifElseBranch,
         expression: expression,
+        lambdaBody: lambdaBody,
         init: F2(init)
     };
 })();

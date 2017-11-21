@@ -1,8 +1,8 @@
 #!/bin/bash
 FILE="$1"
 mkdir -p .coverage
-mv "src/${FILE}.elm" "src/${FILE}.elm.orig"
-~/.local/bin/elm-coverage "src/${FILE}.elm.orig" --output "src/${FILE}.elm"
+mv "${FILE}" "${FILE}.orig"
+~/.local/bin/elm-coverage "${FILE}.orig" --output "${FILE}"
 elm test
-mv "src/${FILE}.elm.orig" "src/${FILE}.elm"
+mv "${FILE}.orig" "${FILE}"
 
