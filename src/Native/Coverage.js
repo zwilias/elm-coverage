@@ -2,17 +2,15 @@ var _user$project$Native_Coverage = (function() {
     var List = _elm_lang$core$Native_List;
     var Utils = _elm_lang$core$Native_Utils;
 
-    // var declarationCounter = {};
-    // var letDeclarationCounter = {};
-    // var caseBranchCounter = {};
-    // var ifElseCounter = {};
-    // var expressionCounter = {};
-    // var lambdaBodyCounter = {};
     var counters = {};
     var fileMap = [];
 
     function makeCounter(counterName, description) {
-        counters[counterName] = { _used: 0, _total: 0, _description: description};
+        counters[counterName] = {
+            _used: 0,
+            _total: 0,
+            _description: description
+        };
 
         return F3(function(moduleName, id, expression) {
             var counter = counters[counterName];
@@ -26,10 +24,19 @@ var _user$project$Native_Coverage = (function() {
     }
 
     var expression = makeCounter("expressions", "expressions evaluated");
-    var declaration = makeCounter("declarations", "top-level declarations used");
-    var ifElseBranch = makeCounter("ifElseBranches", "if/else branches entered");
+    var declaration = makeCounter(
+        "declarations",
+        "top-level declarations used"
+    );
+    var ifElseBranch = makeCounter(
+        "ifElseBranches",
+        "if/else branches entered"
+    );
     var caseBranch = makeCounter("caseBranches", "case..of branches entered");
-    var letDeclaration = makeCounter("letDeclarations", "let declarations used");
+    var letDeclaration = makeCounter(
+        "letDeclarations",
+        "let declarations used"
+    );
     var lambdaBody = makeCounter("lambdaBodies", "lambdas evaluated");
 
     function initCounter(moduleName, info, counter) {
@@ -50,7 +57,7 @@ var _user$project$Native_Coverage = (function() {
     var init = function(moduleName, settings) {
         fileMap.push(moduleName);
 
-        Object.keys(counters).forEach(function (counter) {
+        Object.keys(counters).forEach(function(counter) {
             initCounter(moduleName, settings[counter], counters[counter]);
         });
 
@@ -70,9 +77,12 @@ var _user$project$Native_Coverage = (function() {
 
                 countersByModule[moduleName] = {};
 
-                Object.keys(counters).forEach(function (counterName) {
+                Object.keys(counters).forEach(function(counterName) {
                     var counter = counters[counterName];
-                    countersByModule[moduleName][counterName] = counter[moduleName];
+                    countersByModule[moduleName][counterName] =
+                        counter[moduleName]
+                            ? Object.values(counter[moduleName])
+                            : [];
 
                     var usage = getUsage(counter[moduleName]);
                     counter._used += usage.used;
@@ -87,9 +97,13 @@ var _user$project$Native_Coverage = (function() {
             console.log("Total coverage");
             console.log();
 
-            Object.keys(counters).forEach(function (counterName) {
+            Object.keys(counters).forEach(function(counterName) {
                 var counter = counters[counterName];
-                printUsage(4, { used: counter._used, total: counter._total }, counter._description);
+                printUsage(
+                    4,
+                    { used: counter._used, total: counter._total },
+                    counter._description
+                );
             });
 
             console.log();
@@ -115,9 +129,10 @@ var _user$project$Native_Coverage = (function() {
     }
 
     function printUsage(pad, usage, name) {
-        var percentUsed = usage.total > 0
-            ? Math.round(usage.used / usage.total * 100) + "%"
-            : "";
+        var percentUsed =
+            usage.total > 0
+                ? Math.round(usage.used / usage.total * 100) + "%"
+                : "";
 
         console.log(
             String(percentUsed).padStart(pad + 4) +
