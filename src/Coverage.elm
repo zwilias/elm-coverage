@@ -9,32 +9,32 @@ type alias Identifier =
     }
 
 
-expression : String -> Int -> a -> a
+expression : String -> Int -> Never -> a
 expression =
     Native.Coverage.expression
 
 
-declaration : String -> Int -> a -> a
+declaration : String -> Int -> Never -> a
 declaration =
     Native.Coverage.declaration
 
 
-caseBranch : String -> Int -> a -> a
+caseBranch : String -> Int -> Never -> a
 caseBranch =
     Native.Coverage.caseBranch
 
 
-ifElseBranch : String -> Int -> a -> a
+ifElseBranch : String -> Int -> Never -> a
 ifElseBranch =
     Native.Coverage.ifElseBranch
 
 
-lambdaBody : String -> Int -> a -> a
+lambdaBody : String -> Int -> Never -> a
 lambdaBody =
     Native.Coverage.lambdaBody
 
 
-letDeclaration : String -> Int -> a -> a
+letDeclaration : String -> Int -> Never -> a
 letDeclaration =
     Native.Coverage.letDeclaration
 

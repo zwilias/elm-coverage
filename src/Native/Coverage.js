@@ -4,6 +4,9 @@ var _user$project$Native_Coverage = (function() {
 
     var counters = {};
     var fileMap = [];
+    var absurd = function () {
+        throw new Error("That's absurd!");
+    }
 
     function makeCounter(counterName, description) {
         counters[counterName] = {
@@ -12,14 +15,14 @@ var _user$project$Native_Coverage = (function() {
             _description: description
         };
 
-        return F3(function(moduleName, id, expression) {
+        return F2(function(moduleName, id) {
             var counter = counters[counterName];
 
             counter[moduleName] = counter[moduleName] || {};
             counter[moduleName][id] = counter[moduleName][id] || { count: 0 };
             counter[moduleName][id].count += 1;
 
-            return expression;
+            return absurd;
         });
     }
 
@@ -61,9 +64,7 @@ var _user$project$Native_Coverage = (function() {
             initCounter(moduleName, settings[counter], counters[counter]);
         });
 
-        return function() {
-            throw new Error("... No.");
-        };
+        return absurd;
     };
 
     if (process) {
