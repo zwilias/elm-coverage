@@ -129,14 +129,27 @@ overview moduleMap =
                                         )
                                         totals
                         in
-                            ( row key counts :: rows
+                            ( row (Html.code [] [ Html.text key ]) counts :: rows
                             , adjustedTotals
                             )
                     )
                     ( [], Dict.empty )
     in
-        Html.table []
-            (row "total" totals :: rows)
+        Html.table [ Attr.class "overview" ]
+            [ Html.thead [] [ heading totals ]
+            , Html.tbody [] (row (Html.text "total") totals :: rows)
+            ]
+
+
+heading : Dict String a -> Html msg
+heading map =
+    let
+        makeHead : String -> Html msg
+        makeHead =
+            shortHumanCoverageType >> Html.th []
+    in
+        Html.tr []
+            (Html.th [] [] :: (Dict.keys map |> List.map makeHead))
 
 
 computeCounts : CoverageMap -> Dict String ( Int, Int )
@@ -160,18 +173,46 @@ sum2 ( a, b ) ( x, y ) =
     )
 
 
-row : String -> Dict String ( Int, Int ) -> Html msg
+row : Html msg -> Dict String ( Int, Int ) -> Html msg
 row name counts =
     Html.tr []
-        (Html.td [] [ Html.text name ]
+        (Html.th [] [ name ]
             :: (Dict.values counts |> List.map showCount)
         )
 
 
 showCount : ( Int, Int ) -> Html msg
 showCount ( used, total ) =
-    Html.td []
-        [ Html.text <| toString used ++ " / " ++ toString total ]
+    if total == 0 then
+        Html.td []
+            [ Html.text "n/a" ]
+    else
+        Html.td []
+            [ Html.div [ Attr.class "wrapper" ]
+                [ Html.div [ Attr.class "box" ]
+                    [ Html.div
+                        [ Attr.class "fill"
+                        , Attr.style
+                            [ ( "width"
+                              , "calc(100% * "
+                                    ++ toString used
+                                    ++ "/"
+                                    ++ toString total
+                                    ++ ")"
+                              )
+                            ]
+                        ]
+                        []
+                    ]
+                , Html.div
+                    [ Attr.class "info" ]
+                    [ Html.text <|
+                        toString used
+                            ++ "/"
+                            ++ toString total
+                    ]
+                ]
+            ]
 
 
 container : List (Html msg) -> Html msg
@@ -195,9 +236,22 @@ container content =
 styles : String
 styles =
     """
+@import url(https://fonts.googleapis.com/css?family=Fira+Sans);
+
+@font-face {
+    font-family: 'Fira Code';
+    src: local('Fira Code'), local('FiraCode'), url(https://cdn.rawgit.com/tonsky/FiraCode/master/distr/ttf/FiraCode-Regular.ttf);
+}
+
+code {
+    font-family: "Fira Code", monospace;
+    font-size: 0.9em;
+}
+
 .container {
     margin: 0 30px;
     color: #333333;
+    font-family: "Fira Sans", sans-serif;
 }
 
 .coverage {
@@ -205,7 +259,7 @@ styles =
     font-size: 0.8em;
     white-space: pre;
     line-height: 1.5em;
-    background-color: #F0F0F0;
+    background-color: #fafafa;
     padding: 1em;
     border: 1px solid #D0D0D0;
     border-radius: 0.5em;
@@ -214,7 +268,7 @@ styles =
 }
 
 .whitespace {
-    background-color: #f0f0f0;
+    /* background-color: #f0f0f0; */
     padding: 2px 0;
 }
 
@@ -251,7 +305,76 @@ styles =
 .source {
     flex: 1;
 }
+
+.overview {
+    width: 100%;
+    padding: 0 30px;
+    border: 1px solid #d0d0d0;
+    border-radius: 0.5em;
+}
+
+.overview thead {
+    text-align: center;
+}
+
+.overview tbody {
+    text-align: right;
+}
+
+.overview .wrapper {
+    display: flex;
+}
+
+.overview .box {
+    background-color: red;
+    height: 100%;
+    flex: 1;
+}
+
+.overview .fill {
+    background-color: green;
+    height: 1.2em;
+}
+
+.overview .info {
+    flex: 1;
+}
+
+body {
+    background-color: #fdfdfd;
+}
 """
+
+
+shortHumanCoverageType : String -> List (Html msg)
+shortHumanCoverageType coverageType =
+    case coverageType of
+        "expressions" ->
+            [ Html.text "Expressions" ]
+
+        "caseBranches" ->
+            [ Html.code [] [ Html.text "case" ]
+            , Html.text " branches"
+            ]
+
+        "declarations" ->
+            [ Html.text "Declarations" ]
+
+        "ifElseBranches" ->
+            [ Html.code [] [ Html.text "if/else" ]
+            , Html.text " branches"
+            ]
+
+        "lambdaBodies" ->
+            [ Html.text "Lambdas" ]
+
+        "letDeclarations" ->
+            [ Html.code [] [ Html.text "let" ]
+            , Html.text " declarations"
+            ]
+
+        _ ->
+            [ Html.text "unknown" ]
 
 
 humanCoverageType : String -> Html msg
