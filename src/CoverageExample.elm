@@ -227,11 +227,9 @@ container content =
                     :: Html.h1 [] [ Html.text "Coverage report" ]
                     :: content
                 )
-
-        -- |> Html.toString 0
     in
-        -- Html.textarea [ Attr.value <| Html.toString 0 containerAsString ] []
-        containerContent
+        -- containerContent
+        Html.textarea [ Attr.value <| Html.toString 0 containerContent ] []
 
 
 styles : String
@@ -305,6 +303,7 @@ code {
 
 .source {
     flex: 1;
+    overflow: scroll;
 }
 
 .overview {
@@ -346,8 +345,14 @@ code {
     border-radius: 5px;
     overflow: hidden;
     flex: 1.5;
+    display: none;
 }
 
+@media only screen  and (min-width : 960px) {
+    .overview .box {
+        display: block;
+    }
+}
 .overview .fill {
     background-color: rgb(0, 200, 0);
     height: 1.2em;
