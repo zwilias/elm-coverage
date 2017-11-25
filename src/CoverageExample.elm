@@ -86,28 +86,105 @@ update msg model =
 
 view : Model -> Html msg
 view model =
-    model.moduleMap
-        |> Dict.toList
-        |> List.filterMap
-            (\( key, coverageTypes ) ->
-                Dict.get key model.inputs
-                    |> Maybe.map (showCoverage key coverageTypes)
-            )
-        |> Html.div []
-        |> container
+    let
+        sourceCoverage : List (Html msg)
+        sourceCoverage =
+            model.moduleMap
+                |> Dict.toList
+                |> List.filterMap
+                    (\( key, coverageTypes ) ->
+                        Dict.get key model.inputs
+                            |> Maybe.map (showCoverage key coverageTypes)
+                    )
+
+        coverageOverview : Html msg
+        coverageOverview =
+            overview model.moduleMap
+    in
+        container <| coverageOverview :: sourceCoverage
 
 
-container : Html msg -> Html msg
+overview : ModuleMap -> Html msg
+overview moduleMap =
+    let
+        ( rows, totals ) =
+            moduleMap
+                |> Dict.toList
+                |> List.foldr
+                    (\( key, coverageMap ) ( rows, totals ) ->
+                        let
+                            counts : Dict String ( Int, Int )
+                            counts =
+                                computeCounts coverageMap
+
+                            adjustedTotals =
+                                counts
+                                    |> Dict.foldl
+                                        (\coverageType cnts ->
+                                            Dict.update coverageType
+                                                (Maybe.map (sum2 cnts)
+                                                    >> Maybe.withDefault cnts
+                                                    >> Just
+                                                )
+                                        )
+                                        totals
+                        in
+                            ( row key counts :: rows
+                            , adjustedTotals
+                            )
+                    )
+                    ( [], Dict.empty )
+    in
+        Html.table []
+            (row "total" totals :: rows)
+
+
+computeCounts : CoverageMap -> Dict String ( Int, Int )
+computeCounts =
+    Dict.map
+        (always <|
+            List.foldl
+                (\region ( used, total ) ->
+                    ( used + (min 1 region.count)
+                    , total + 1
+                    )
+                )
+                ( 0, 0 )
+        )
+
+
+sum2 : ( Int, Int ) -> ( Int, Int ) -> ( Int, Int )
+sum2 ( a, b ) ( x, y ) =
+    ( a + x
+    , b + y
+    )
+
+
+row : String -> Dict String ( Int, Int ) -> Html msg
+row name counts =
+    Html.tr []
+        (Html.td [] [ Html.text name ]
+            :: (Dict.values counts |> List.map showCount)
+        )
+
+
+showCount : ( Int, Int ) -> Html msg
+showCount ( used, total ) =
+    Html.td []
+        [ Html.text <| toString used ++ " / " ++ toString total ]
+
+
+container : List (Html msg) -> Html msg
 container content =
     let
         containerContent =
             Html.div [ Attr.class "container" ]
-                [ Html.node "style"
+                (Html.node "style"
                     []
                     [ Html.text styles ]
-                , Html.h1 [] [ Html.text "Coverage report" ]
-                , content
-                ]
+                    :: Html.h1 [] [ Html.text "Coverage report" ]
+                    :: content
+                )
 
         -- |> Html.toString 0
     in
