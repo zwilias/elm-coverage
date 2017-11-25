@@ -42,7 +42,7 @@ var _user$project$Native_Coverage = (function() {
     );
     var lambdaBody = makeCounter("lambdaBodies", "lambdas evaluated");
 
-    function initCounter(moduleName, info, counter) {
+    function initCounter(moduleName, info, counter, counterType) {
         List.toArray(info).forEach(function(info, idx) {
             var location = {
                 from: { line: info.startPos._0, column: info.startPos._1 },
@@ -50,10 +50,8 @@ var _user$project$Native_Coverage = (function() {
             };
 
             counter[moduleName] = counter[moduleName] || {};
-            counter[moduleName][idx] = counter[moduleName][idx] || {
-                location: location,
-                count: 0
-            };
+            counter[moduleName][idx] = counter[moduleName][idx] || { count: 0};
+            counter[moduleName][idx].location = location;
         });
     }
 
@@ -61,7 +59,7 @@ var _user$project$Native_Coverage = (function() {
         fileMap.push(moduleName);
 
         Object.keys(counters).forEach(function(counter) {
-            initCounter(moduleName, settings[counter], counters[counter]);
+            initCounter(moduleName, settings[counter], counters[counter], counter);
         });
 
         return absurd;
