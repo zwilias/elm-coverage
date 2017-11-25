@@ -137,7 +137,8 @@ overview moduleMap =
     in
         Html.table [ Attr.class "overview" ]
             [ Html.thead [] [ heading totals ]
-            , Html.tbody [] (row (Html.text "total") totals :: rows)
+            , Html.tbody [] rows
+            , Html.tfoot [] [ row (Html.text "total") totals ]
             ]
 
 
@@ -184,12 +185,19 @@ row name counts =
 showCount : ( Int, Int ) -> Html msg
 showCount ( used, total ) =
     if total == 0 then
-        Html.td []
+        Html.td [ Attr.class "none" ]
             [ Html.text "n/a" ]
     else
         Html.td []
             [ Html.div [ Attr.class "wrapper" ]
-                [ Html.div [ Attr.class "box" ]
+                [ Html.div
+                    [ Attr.class "info" ]
+                    [ Html.text <|
+                        toString used
+                            ++ "/"
+                            ++ toString total
+                    ]
+                , Html.div [ Attr.class "box" ]
                     [ Html.div
                         [ Attr.class "fill"
                         , Attr.style
@@ -203,13 +211,6 @@ showCount ( used, total ) =
                             ]
                         ]
                         []
-                    ]
-                , Html.div
-                    [ Attr.class "info" ]
-                    [ Html.text <|
-                        toString used
-                            ++ "/"
-                            ++ toString total
                     ]
                 ]
             ]
@@ -311,13 +312,20 @@ code {
     padding: 0 30px;
     border: 1px solid #d0d0d0;
     border-radius: 0.5em;
+    table-layout: fixed;
 }
 
 .overview thead {
     text-align: center;
 }
 
-.overview tbody {
+.overview thead tr,
+.overview tfoot tr {
+    height: 3em;
+}
+
+.overview tbody th,
+.overview tfoot th {
     text-align: right;
 }
 
@@ -325,19 +333,30 @@ code {
     display: flex;
 }
 
+.overview .none {
+    text-align: center;
+    color: #606060;
+    font-size: 0.8em;
+}
+
 .overview .box {
-    background-color: red;
+    background-color: rgba(255, 30, 30, 0.8);
     height: 100%;
     flex: 1;
+    border-radius: 5px;
+    overflow: hidden;
+    flex: 1.5;
 }
 
 .overview .fill {
-    background-color: green;
+    background-color: rgb(0, 200, 0);
     height: 1.2em;
 }
 
 .overview .info {
     flex: 1;
+    text-align: right;
+    margin: 0 1em;
 }
 
 body {
