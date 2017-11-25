@@ -143,21 +143,20 @@ styles =
 
 .covered {
     background-color: rgba(0, 255, 0, 0.2);
-    padding: 2px;
     color: #202020;
-    /* box-shadow: 0 0 0 2px green; */
+    box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.2);
 }
 
 .uncovered {
     background-color: rgba(255, 30, 30, 0.8);
-    padding: 2px;
     color: white;
-    /* box-shadow: 0 0 0 2px red; */
+    box-shadow: 0 0 0 2px rgba(255, 30, 30, 0.8);
 }
 
-br + span.covered,
-br + span.uncovered {
-    padding-left: 0;
+.uncovered .covered {
+    background-color: transparent;
+    color: inherit;
+    box-shadow: none;
 }
 
 .lines {

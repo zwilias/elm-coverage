@@ -14,12 +14,6 @@ type Marker
     | End
 
 
-type alias Acc msg =
-    { children : List (Html msg)
-    , stack : List ( Int, List (Html msg) )
-    }
-
-
 type alias Context =
     Int
 
@@ -33,7 +27,7 @@ markup input markers =
     markupHelper input 0 (Dict.toList markers) { children = [], stack = [] }
         |> \{ children } ->
             Html.div [ Attr.class "coverage" ]
-                [ Html.div [ Attr.class "source" ] (List.reverse children)
+                [ Html.div [ Attr.class "source" ] (toHtml children)
                 , Html.div [ Attr.class "lines" ] (lines input)
                 ]
 
@@ -50,22 +44,84 @@ lines input =
             )
 
 
-stringParts : String -> List (Html msg)
+type alias Acc msg =
+    { children : List (Content msg)
+    , stack : List ( Int, List (Content msg) )
+    }
+
+
+type Part
+    = Part String
+    | LineBreak
+    | Indent Int
+    | Indented Int String
+
+
+wrap : (List (Html msg) -> Html msg) -> List (Content msg) -> Content msg
+wrap wrapper content =
+    Content (List.singleton >> wrapper) (content)
+
+
+
+-- ARGH why is this so frustrating? I need it to be List content, but also no I
+-- don't? Unless I put a `Plain` tag there? :thinking face:
+-- Yep, that should do nicely.
+
+
+type Content msg
+    = Plain (List Part)
+    | Content (Html msg -> Html msg) (List (Content msg))
+
+
+toHtml : List (Content msg) -> List (Html msg)
+toHtml content =
+    List.concatMap (contentToHtml Html.text) content
+        |> List.reverse
+
+
+contentToHtml : (String -> Html msg) -> Content msg -> List (Html msg)
+contentToHtml tagger content =
+    case content of
+        Plain parts ->
+            List.concatMap (partToHtml tagger) parts
+
+        Content wrapper parts ->
+            List.concatMap (contentToHtml (wrapper << tagger)) parts
+
+
+partToHtml : (String -> Html msg) -> Part -> List (Html msg)
+partToHtml tagger part =
+    case part of
+        Part s ->
+            [ tagger s ]
+
+        LineBreak ->
+            [ Html.br [] [] ]
+
+        Indent indent ->
+            [ Html.span [ Attr.class "whitespace" ] [ Html.text <| String.repeat indent " " ] ]
+
+        Indented indent content ->
+            [ tagger content
+            , Html.span [ Attr.class "whitespace" ] [ Html.text <| String.repeat indent " " ]
+            ]
+
+
+stringParts : String -> Content msg
 stringParts string =
     case String.lines string of
         [] ->
-            []
+            Debug.crash "nope"
 
         head :: rest ->
-            [ Html.text head ]
-                :: List.map chompSpaces rest
-                |> List.intersperse ([ Html.br [] [] ])
-                |> List.concat
+            (Part head :: List.map findIndent rest)
+                |> List.intersperse LineBreak
                 |> List.reverse
+                |> Plain
 
 
-chompSpaces : String -> List (Html msg)
-chompSpaces string =
+findIndent : String -> Part
+findIndent string =
     String.foldl
         (\c ( spaces, continue ) ->
             if continue && c == ' ' then
@@ -76,14 +132,16 @@ chompSpaces string =
         ( 0, True )
         string
         |> (\( spaces, _ ) ->
-                if spaces == 0 then
-                    [ Html.text string ]
-                else
-                    [ Html.span
-                        [ Attr.class "whitespace" ]
-                        [ Html.text <| String.repeat spaces " " ]
-                    , Html.text <| String.slice spaces (String.length string) string
-                    ]
+                let
+                    rest =
+                        String.slice spaces (String.length string) string
+                in
+                    if String.isEmpty rest then
+                        Indent spaces
+                    else if spaces == 0 then
+                        Part string
+                    else
+                        Indented spaces (String.slice spaces (String.length string) string)
            )
 
 
@@ -92,23 +150,23 @@ markupHelper original offset markers acc =
     case markers of
         [] ->
             let
-                rest : List (Html msg)
+                rest : Content msg
                 rest =
                     original
                         |> String.slice offset (String.length original)
                         |> stringParts
             in
-                { acc | children = rest ++ acc.children }
+                { acc | children = rest :: acc.children }
 
         ( pos, markerList ) :: rest ->
             let
-                readIn : List (Html msg)
+                readIn : Content msg
                 readIn =
                     original
                         |> String.slice offset pos
                         |> stringParts
             in
-                consumeMarkers markerList { acc | children = readIn ++ acc.children }
+                consumeMarkers markerList { acc | children = readIn :: acc.children }
                     |> markupHelper original pos rest
 
 
@@ -133,11 +191,13 @@ consumeMarker marker acc =
                 ( cnt, x ) :: xs ->
                     let
                         content =
-                            Html.span
-                                [ Attr.class <| toClass cnt
-                                , Attr.title <| "Evaluated " ++ toString cnt ++ " times."
-                                ]
-                                (List.reverse acc.children)
+                            wrap
+                                (Html.span
+                                    [ Attr.class <| toClass cnt
+                                    , Attr.title <| "Evaluated " ++ toString cnt ++ " times."
+                                    ]
+                                )
+                                acc.children
                     in
                         { children = content :: x
                         , stack = xs
@@ -147,9 +207,9 @@ consumeMarker marker acc =
 toClass : Int -> String
 toClass cnt =
     if cnt == 0 then
-        "uncovered"
+        "cover uncovered"
     else
-        "covered"
+        "cover covered"
 
 
 addToListDict : a -> Maybe (List a) -> Maybe (List a)
