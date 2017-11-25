@@ -69,36 +69,43 @@ type Content msg
 
 toHtml : List (Content msg) -> List (Html msg)
 toHtml content =
-    List.concatMap (contentToHtml Html.text) content
+    List.concatMap (contentToHtml identity) content
         |> List.reverse
 
 
-contentToHtml : (String -> Html msg) -> Content msg -> List (Html msg)
+contentToHtml : (Html msg -> Html msg) -> Content msg -> List (Html msg)
 contentToHtml tagger content =
     case content of
         Plain parts ->
             List.concatMap (partToHtml tagger) parts
 
         Content wrapper parts ->
-            List.concatMap (contentToHtml (wrapper << tagger)) parts
+            List.concatMap (contentToHtml (wrapper >> tagger)) parts
 
 
-partToHtml : (String -> Html msg) -> Part -> List (Html msg)
+partToHtml : (Html msg -> Html msg) -> Part -> List (Html msg)
 partToHtml tagger part =
     case part of
         Part s ->
-            [ tagger s ]
+            [ tagger <| Html.text s ]
 
         LineBreak ->
             [ Html.br [] [] ]
 
         Indent indent ->
-            [ Html.span [ Attr.class "whitespace" ] [ Html.text <| String.repeat indent " " ] ]
+            [ whitespace indent ]
 
         Indented indent content ->
-            [ tagger content
-            , Html.span [ Attr.class "whitespace" ] [ Html.text <| String.repeat indent " " ]
+            [ tagger <| Html.text content
+            , whitespace indent
             ]
+
+
+whitespace : Int -> Html msg
+whitespace indent =
+    Html.span
+        [ Attr.class "whitespace" ]
+        [ Html.text <| String.repeat indent " " ]
 
 
 stringParts : String -> Content msg
@@ -184,18 +191,21 @@ consumeMarker marker acc =
 
                 ( cnt, x ) :: xs ->
                     let
+                        content : Content msg
                         content =
-                            wrap
-                                (Html.span
-                                    [ Attr.class <| toClass cnt
-                                    , Attr.title <| "Evaluated " ++ toString cnt ++ " times."
-                                    ]
-                                )
-                                acc.children
+                            wrap (wrapper cnt) acc.children
                     in
                         { children = content :: x
                         , stack = xs
                         }
+
+
+wrapper : Int -> List (Html msg) -> Html msg
+wrapper cnt =
+    Html.span
+        [ Attr.class <| toClass cnt
+        , Attr.title <| "Evaluated " ++ toString cnt ++ " times."
+        ]
 
 
 toClass : Int -> String
