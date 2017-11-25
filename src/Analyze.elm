@@ -62,12 +62,6 @@ wrap wrapper content =
     Content (List.singleton >> wrapper) (content)
 
 
-
--- ARGH why is this so frustrating? I need it to be List content, but also no I
--- don't? Unless I put a `Plain` tag there? :thinking face:
--- Yep, that should do nicely.
-
-
 type Content msg
     = Plain (List Part)
     | Content (Html msg -> Html msg) (List (Content msg))
