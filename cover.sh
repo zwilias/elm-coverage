@@ -8,7 +8,7 @@ mkdir -p .coverage
 
 (cd tests &&
     cp elm-package.json elm-package.json.bak &&
-    jq '. + {"source-directories": (."source-directories" + ["/Users/ilias/src/elm/elm-coverage/src"])} + {"native-modules": true, "repository": "https://github.com/user/project.git"}' elm-package.json | sponge elm-package.json
+    jq '. + {"source-directories": (."source-directories" + ["/Users/ilias/Src/elm/elm-coverage/src"])} + {"native-modules": true, "repository": "https://github.com/user/project.git"}' elm-package.json | sponge elm-package.json
 )
 
 if [[ -d "${FILE}" ]]; then
@@ -28,3 +28,4 @@ else
 fi
 
 (cd tests && mv elm-package.json.bak elm-package.json)
+node /Users/ilias/Src/elm/elm-coverage/analyze.js "$FILE"
