@@ -184,7 +184,10 @@ partToHtml : (Html msg -> Html msg) -> Part -> List (Html msg)
 partToHtml tagger part =
     case part of
         Part s ->
-            [ tagger <| Html.text s ]
+            if String.isEmpty s then
+                []
+            else
+                [ tagger <| Html.text s ]
 
         LineBreak ->
             [ Html.br [] [] ]
@@ -517,21 +520,11 @@ showCount moduleName coverageType ( used, total ) =
                                 ++ "/"
                                 ++ toString total
                     ]
-                , Html.div [ Attr.class "box" ]
-                    [ Html.div
-                        [ Attr.class "fill"
-                        , Attr.style
-                            [ ( "width"
-                              , "calc(100% * "
-                                    ++ toString used
-                                    ++ "/"
-                                    ++ toString total
-                                    ++ ")"
-                              )
-                            ]
-                        ]
-                        []
+                , Html.progress
+                    [ Attr.max <| toString total
+                    , Attr.value <| toString used
                     ]
+                    []
                 ]
             ]
 
@@ -586,21 +579,31 @@ code {
     flex-direction: row-reverse;
 }
 
-.whitespace {
-    /* background-color: #f0f0f0; */
-    padding: 2px 0;
-}
-
 .covered {
-    background-color: rgba(0, 255, 0, 0.2);
+    background-color: #83dc83;
     color: #202020;
-    box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 0 2px #83dc83;
+    border-bottom: 1px solid #83dc83;
 }
 
 .uncovered {
-    background-color: rgba(255, 30, 30, 0.8);
+    background-color: rgb(255, 30, 30);
     color: white;
-    box-shadow: 0 0 0 2px rgba(255, 30, 30, 0.8);
+    box-shadow: 0 0 0 2px rgb(255, 30, 30);
+    border-bottom-width: 1px;
+    border-bottom-style: dashed;
+}
+
+.covered > .covered {
+    box-shadow: none;
+    background-color: initial;
+    border-bottom: none;
+}
+
+.uncovered > .uncovered {
+    box-shadow: none;
+    border-bottom: none;
+    background-color: initial;
 }
 
 .uncovered .covered {
@@ -671,24 +674,15 @@ code {
     font-size: 0.8em;
 }
 
-.overview .box {
-    background-color: rgba(255, 30, 30, 0.8);
-    height: 100%;
-    flex: 1;
-    border-radius: 5px;
-    overflow: hidden;
+.overview progress {
     flex: 1.5;
     display: none;
 }
 
 @media only screen  and (min-width : 960px) {
-    .overview .box {
+    .overview progress {
         display: block;
     }
-}
-.overview .fill {
-    background-color: rgb(0, 200, 0);
-    height: 1.2em;
 }
 
 .overview .info {
