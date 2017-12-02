@@ -1,18 +1,18 @@
+var fs = require("fs");
 var _user$project$Native_Coverage = (function() {
     var List = _elm_lang$core$Native_List;
     var Utils = _elm_lang$core$Native_Utils;
 
     var counters = {};
     var fileMap = [];
-    var absurd = function () {
+    var absurd = function() {
         throw new Error("That's absurd!");
-    }
+    };
 
-    function makeCounter(counterName, description) {
+    function makeCounter(counterName) {
         counters[counterName] = {
             _used: 0,
-            _total: 0,
-            _description: description
+            _total: 0
         };
 
         return F2(function(moduleName, id) {
@@ -26,21 +26,12 @@ var _user$project$Native_Coverage = (function() {
         });
     }
 
-    var expression = makeCounter("expressions", "expressions evaluated");
-    var declaration = makeCounter(
-        "declarations",
-        "top-level declarations used"
-    );
-    var ifElseBranch = makeCounter(
-        "ifElseBranches",
-        "if/else branches entered"
-    );
-    var caseBranch = makeCounter("caseBranches", "case..of branches entered");
-    var letDeclaration = makeCounter(
-        "letDeclarations",
-        "let declarations used"
-    );
-    var lambdaBody = makeCounter("lambdaBodies", "lambdas evaluated");
+    var expression = makeCounter("expressions");
+    var declaration = makeCounter("declarations");
+    var ifElseBranch = makeCounter("ifElseBranches");
+    var caseBranch = makeCounter("caseBranches");
+    var letDeclaration = makeCounter("letDeclarations");
+    var lambdaBody = makeCounter("lambdaBodies");
 
     function initCounter(moduleName, info, counter, counterType) {
         List.toArray(info).forEach(function(info, idx) {
@@ -50,16 +41,26 @@ var _user$project$Native_Coverage = (function() {
             };
 
             counter[moduleName] = counter[moduleName] || {};
-            counter[moduleName][idx] = counter[moduleName][idx] || { count: 0};
+            counter[moduleName][idx] = counter[moduleName][idx] || { count: 0 };
             counter[moduleName][idx].location = location;
         });
     }
 
     var init = function(moduleName, settings) {
+        fs.writeFileSync(
+            "../../../../.coverage/coverage-" + process.pid + ".marker",
+            ""
+        );
+
         fileMap.push(moduleName);
 
         Object.keys(counters).forEach(function(counter) {
-            initCounter(moduleName, settings[counter], counters[counter], counter);
+            initCounter(
+                moduleName,
+                settings[counter],
+                counters[counter],
+                counter
+            );
         });
 
         return absurd;
@@ -68,81 +69,28 @@ var _user$project$Native_Coverage = (function() {
     if (process) {
         process.on("exit", function() {
             var countersByModule = {};
-
-            console.log();
             for (var moduleName of fileMap) {
-                console.log("Coverage for module " + moduleName);
-                console.log();
-
                 countersByModule[moduleName] = {};
 
                 Object.keys(counters).forEach(function(counterName) {
                     var counter = counters[counterName];
-                    countersByModule[moduleName][counterName] =
-                        counter[moduleName]
-                            ? Object.values(counter[moduleName])
-                            : [];
-
-                    var usage = getUsage(counter[moduleName]);
-                    counter._used += usage.used;
-                    counter._total += usage.total;
-
-                    printUsage(4, usage, counter._description);
+                    countersByModule[moduleName][counterName] = counter[
+                        moduleName
+                    ]
+                        ? Object.values(counter[moduleName])
+                        : [];
                 });
-
-                console.log();
             }
 
-            console.log("Total coverage");
-            console.log();
-
-            Object.keys(counters).forEach(function(counterName) {
-                var counter = counters[counterName];
-                printUsage(
-                    4,
-                    { used: counter._used, total: counter._total },
-                    counter._description
-                );
-            });
-
-            console.log();
             fs.writeFileSync(
-                "../../../../.coverage/coverage.json",
+                "../../../../.coverage/coverage-" + process.pid + ".json",
                 JSON.stringify(countersByModule)
             );
+            fs.writeFileSync(
+                "../../../../.coverage/coverage-" + process.pid + ".created",
+                ""
+            );
         });
-    }
-
-    function getUsage(counter) {
-        var total = 0;
-        var used = 0;
-
-        for (var key in counter) {
-            if (counter.hasOwnProperty(key)) {
-                total += 1;
-                used += counter[key].count === 0 ? 0 : 1;
-            }
-        }
-
-        return { used: used, total: total };
-    }
-
-    function printUsage(pad, usage, name) {
-        var percentUsed =
-            usage.total > 0
-                ? Math.round(usage.used / usage.total * 100) + "%"
-                : "";
-
-        console.log(
-            String(percentUsed).padStart(pad + 4) +
-                " " +
-                name +
-                " (" +
-                usage.used +
-                "/" +
-                usage.total +
-                ")"
-        );
     }
 
     return {

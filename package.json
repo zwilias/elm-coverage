@@ -1,0 +1,24 @@
+{
+    "name": "elm-coverage",
+    "version": "0.0.1",
+    "dev-dependencies": {
+        "elm": "^0.18.0",
+        "jscodeshift": "^0.3.32"
+    },
+    "dependencies": {
+        "bluebird": "^3.5.1",
+        "cross-spawn": "^5.1.0",
+        "find": "^0.2.7",
+        "fs-extra": "^4.0.2",
+        "lodash": "^4.17.4",
+        "tmp": "0.0.33",
+        "yargs": "^10.0.3"
+    },
+    "bin": "bin/elm-coverage",
+    "scripts": {
+        "build:elm": "elm-make src/Analyzer.elm --output analyzer.js",
+        "build:opt-astar": "jscodeshift -t codemods/eliminateRedundantAStar.js analyzer.js",
+        "build:opt-chareq": "jscodeshift -t codemods/optimizeCharEquality.js analyzer.js",
+        "build": "npm run build:elm && npm run build:opt-astar && npm run build:opt-chareq"
+    }
+}

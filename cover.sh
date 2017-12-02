@@ -5,6 +5,7 @@ COMPILER=$(which elm-make)
 FILE="$1"
 shift
 mkdir -p .coverage
+rm -rf .coverage/*.json
 
 (cd tests &&
     cp elm-package.json elm-package.json.bak &&

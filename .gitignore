@@ -1,4 +1,6 @@
 elm-stuff/
+node_modules/
+
 
 .coverage
 Analyzer.js
