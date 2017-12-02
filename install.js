@@ -17,8 +17,8 @@ var url =
     filename;
 
 var binariesDir = path.join(__dirname, "bin");
-var packageInfo = require(path.join(__dirname, "package.json"));
 var binaryExtension = process.platform === "win32" ? ".exe" : "";
+
 var executablePaths = Object.keys(packageInfo.bin).map(function(executable) {
     return path.join(binariesDir, executable + binaryExtension);
 });
