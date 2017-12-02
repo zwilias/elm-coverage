@@ -1,0 +1,4 @@
+#!/usr/bin/env elm-instrument
+
+console.error("Not installed");
+process.exit(1);
