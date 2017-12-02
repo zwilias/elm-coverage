@@ -32,7 +32,8 @@ var Promise = require("bluebird"),
     fs = require("fs-extra"),
     tmp = Promise.promisifyAll(require("tmp")),
     spawn = require("cross-spawn"),
-    path = require("path");
+    path = require("path"),
+    touch = require("touch");
 
 var allFiles = {};
 
@@ -138,7 +139,11 @@ Promise.resolve()
         console.log("Cleaning up...");
         return Promise.map(Object.keys(allFiles), function(originalPath) {
             return fs.remove(originalPath).then(function() {
-                return fs.move(allFiles[originalPath], originalPath);
+                return fs
+                    .move(allFiles[originalPath], originalPath)
+                    .then(function() {
+                        touch.sync(originalPath);
+                    });
             });
         }).then(function() {
             console.log("Cleanup done!");

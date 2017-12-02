@@ -19,9 +19,6 @@ module.exports = function(sourcePath) {
                                 markerFile.replace("marker", "created")
                         )
                     ) {
-                        console.log(
-                            ".coverage/" + markerFile.replace("marker", "json")
-                        );
                         res();
                     } else {
                         setTimeout(wait, 250);
