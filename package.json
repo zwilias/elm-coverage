@@ -1,6 +1,8 @@
 {
     "name": "elm-coverage",
     "version": "0.0.1",
+    "license": "BSD-3-Clause",
+    "homepage": "https://github.com/zwilias/elm-coverage#readme",
     "dev-dependencies": {
         "elm": "^0.18.0",
         "jscodeshift": "^0.3.32"
@@ -15,13 +17,23 @@
         "opn": "^5.1.0",
         "tmp": "0.0.33",
         "touch": "^3.1.0",
-        "yargs": "^10.0.3"
+        "yargs": "^10.0.3",
+        "binstall": "^1.2.0"
     },
     "bin": "bin/elm-coverage",
+    "files": [
+        "bin/",
+        "src/",
+        "lib/",
+        "lib/Analyzer.js",
+        "install.js"
+    ],
     "scripts": {
-        "build:elm": "elm-make src/Analyzer.elm --output lib/analyzer.js",
-        "build:opt-astar": "jscodeshift -t codemods/eliminateRedundantAStar.js lib/analyzer.js",
-        "build:opt-chareq": "jscodeshift -t codemods/optimizeCharEquality.js lib/analyzer.js",
-        "build": "npm run build:elm && npm run build:opt-astar && npm run build:opt-chareq"
+        "make:elm": "elm-make src/Analyzer.elm --output lib/analyzer.js",
+        "make:opt-astar": "jscodeshift -t codemods/eliminateRedundantAStar.js lib/analyzer.js",
+        "make:opt-chareq": "jscodeshift -t codemods/optimizeCharEquality.js lib/analyzer.js",
+        "make": "npm run make:elm && npm run make:opt-astar && npm run make:opt-chareq",
+        "prepublishOnly": "npm run make",
+        "install": "node install.js"
     }
 }
