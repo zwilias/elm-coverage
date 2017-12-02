@@ -3,7 +3,8 @@
     "version": "0.0.1",
     "license": "BSD-3-Clause",
     "homepage": "https://github.com/zwilias/elm-coverage#readme",
-    "dev-dependencies": {
+    "repository": "zwilias/elm-coverage",
+    "devDependencies": {
         "elm": "^0.18.0",
         "jscodeshift": "^0.3.32"
     },
@@ -20,7 +21,10 @@
         "yargs": "^10.0.3",
         "binstall": "^1.2.0"
     },
-    "bin": "bin/elm-coverage",
+    "bin": {
+        "elm-coverage": "bin/elm-coverage",
+        "elm-instrument": "bin/elm-instrument"
+    },
     "files": [
         "bin/",
         "src/",
