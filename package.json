@@ -1,6 +1,6 @@
 {
     "name": "elm-coverage",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "license": "BSD-3-Clause",
     "homepage": "https://github.com/zwilias/elm-coverage#readme",
     "repository": "zwilias/elm-coverage",
@@ -27,6 +27,7 @@
     },
     "files": [
         "bin/",
+        "bin/elm-instrument",
         "src/",
         "lib/",
         "lib/Analyzer.js",
