@@ -136,7 +136,7 @@ lines coverageId input =
                 let
                     lineId : String
                     lineId =
-                        coverageId ++ "_" ++ toString idx
+                        coverageId ++ "_" ++ toString (idx + 1)
                 in
                 Html.div
                     [ Attr.class "line", Attr.id lineId ]
@@ -306,15 +306,16 @@ consumeMarker marker acc =
                     }
 
 
-wrapper : Int  -> Maybe Int -> List (Html msg) -> Html msg
+wrapper : Int -> Maybe Int -> List (Html msg) -> Html msg
 wrapper cnt complexity =
     let
-        content = case complexity of
-            Just c ->
-                "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
+        content =
+            case complexity of
+                Just c ->
+                    "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
 
-            Nothing ->
-                "Evaluated " ++ toString cnt ++ " times."
+                Nothing ->
+                    "Evaluated " ++ toString cnt ++ " times."
     in
     Html.span
         [ Attr.class <| toClass cnt
@@ -551,11 +552,10 @@ container content =
                 (Html.node "style"
                     []
                     [ Html.text styles ]
-                    :: Html.h1 [] [ Html.text "Coverage report" ]
+                    :: Html.h1 [ Attr.id "top" ] [ Html.text "Coverage report" ]
                     :: content
                 )
     in
-    -- Html.textarea [ Attr.value <| Html.toString 0 containerContent ] []
     containerContent
 
 
@@ -705,6 +705,11 @@ code {
     margin: 0 1em;
 }
 
+.toTop {
+    float: right;
+    text-decoration: none;
+}
+
 body {
     background-color: #fdfdfd;
 }
@@ -815,6 +820,12 @@ showCoverage moduleName coverageMap file =
                                                 [ Attr.id coverageId ]
                                                 [ humanCoverageType
                                                     coverageType
+                                                , Html.a
+                                                    [ Attr.class "toTop"
+                                                    , Attr.title "To top"
+                                                    , Attr.href "#top"
+                                                    ]
+                                                    [ Html.text "▴" ]
                                                 ]
                                             , processed
                                             ]
