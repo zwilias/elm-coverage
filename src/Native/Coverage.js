@@ -10,39 +10,38 @@ var _user$project$Native_Coverage = (function() {
     };
 
     function makeCounter(counterName) {
-        counters[counterName] = {
-            _used: 0,
-            _total: 0
-        };
-
         return F2(function(moduleName, id) {
-            var counter = counters[counterName];
+            counters[moduleName] = counters[moduleName] || {};
+            counters[moduleName][counterName] =
+                counters[moduleName][counterName] || [];
 
-            counter[moduleName] = counter[moduleName] || {};
-            counter[moduleName][id] = counter[moduleName][id] || { count: 0 };
-            counter[moduleName][id].count += 1;
+            var counter = counters[moduleName][counterName];
+
+            counter[id] = counter[id] || { count: 0 };
+            counter[id].count += 1;
 
             return absurd;
         });
     }
 
-    var expression = makeCounter("expressions");
     var declaration = makeCounter("declarations");
     var ifElseBranch = makeCounter("ifElseBranches");
     var caseBranch = makeCounter("caseBranches");
     var letDeclaration = makeCounter("letDeclarations");
     var lambdaBody = makeCounter("lambdaBodies");
 
-    function initCounter(moduleName, info, counter, counterType) {
+    function initCounter(info, counter) {
         List.toArray(info).forEach(function(info, idx) {
             var location = {
                 from: { line: info.startPos._0, column: info.startPos._1 },
                 to: { line: info.endPos._0, column: info.endPos._1 }
             };
 
-            counter[moduleName] = counter[moduleName] || {};
-            counter[moduleName][idx] = counter[moduleName][idx] || { count: 0 };
-            counter[moduleName][idx].location = location;
+            counter = counter || [];
+            counter[idx] = counter[idx] || { count: 0 };
+            counter[idx].location = location;
+            counter[idx].name = info.name;
+            counter[idx].complexity = info.complexity;
         });
     }
 
@@ -53,14 +52,10 @@ var _user$project$Native_Coverage = (function() {
         );
 
         fileMap.push(moduleName);
-
-        Object.keys(counters).forEach(function(counter) {
-            initCounter(
-                moduleName,
-                settings[counter],
-                counters[counter],
-                counter
-            );
+        Object.keys(settings).forEach(function(counter) {
+            counters[moduleName] = counters[moduleName] || {};
+            counters[moduleName][counter] = counters[moduleName][counter] || [];
+            initCounter(settings[counter], counters[moduleName][counter]);
         });
 
         return absurd;
@@ -68,23 +63,9 @@ var _user$project$Native_Coverage = (function() {
 
     if (process) {
         process.on("exit", function() {
-            var countersByModule = {};
-            for (var moduleName of fileMap) {
-                countersByModule[moduleName] = {};
-
-                Object.keys(counters).forEach(function(counterName) {
-                    var counter = counters[counterName];
-                    countersByModule[moduleName][counterName] = counter[
-                        moduleName
-                    ]
-                        ? Object.values(counter[moduleName])
-                        : [];
-                });
-            }
-
             fs.writeFileSync(
                 "../../../../.coverage/coverage-" + process.pid + ".json",
-                JSON.stringify(countersByModule)
+                JSON.stringify(counters)
             );
             fs.writeFileSync(
                 "../../../../.coverage/coverage-" + process.pid + ".created",
@@ -98,7 +79,6 @@ var _user$project$Native_Coverage = (function() {
         letDeclaration: letDeclaration,
         caseBranch: caseBranch,
         ifElseBranch: ifElseBranch,
-        expression: expression,
         lambdaBody: lambdaBody,
         init: F2(init)
     };

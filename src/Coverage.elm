@@ -9,9 +9,19 @@ type alias Identifier =
     }
 
 
-expression : String -> Int -> Never -> a
-expression =
-    Native.Coverage.expression
+type alias IdentifierC =
+    { complexity : Int
+    , startPos : ( Int, Int )
+    , endPos : ( Int, Int )
+    }
+
+
+type alias IdentifierD =
+    { name : String
+    , complexity : Int
+    , startPos : ( Int, Int )
+    , endPos : ( Int, Int )
+    }
 
 
 declaration : String -> Int -> Never -> a
@@ -40,15 +50,16 @@ letDeclaration =
 
 
 init :
-    String
-    -> { expressions : List Identifier
-       , declarations : List Identifier
-       , caseBranches : List Identifier
-       , ifElseBranches : List Identifier
-       , lambdaBodies : List Identifier
-       , letDeclarations : List Identifier
-       }
+    Int
+    -> String
+    ->
+        { declarations : List IdentifierD
+        , caseBranches : List Identifier
+        , ifElseBranches : List Identifier
+        , lambdaBodies : List IdentifierC
+        , letDeclarations : List IdentifierC
+        }
     -> Never
     -> a
-init =
+init _ =
     Native.Coverage.init

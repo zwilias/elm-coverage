@@ -40,9 +40,9 @@ flagsToModel flags =
             Decode.decodeValue regionsDecoder flags.coverage
                 |> Result.withDefault Dict.empty
     in
-        { moduleMap = moduleMap
-        , inputs = Dict.fromList flags.files
-        }
+    { moduleMap = moduleMap
+    , inputs = Dict.fromList flags.files
+    }
 
 
 init : Flags -> ( Model, Cmd msg )
@@ -52,9 +52,9 @@ init flags =
         model =
             flagsToModel flags
     in
-        ( model
-        , dump model
-        )
+    ( model
+    , dump model
+    )
 
 
 port coverage : String -> Cmd msg
@@ -74,10 +74,11 @@ regionDecoder =
                 (Decode.field "line" Decode.int)
                 (Decode.field "column" Decode.int)
     in
-        Decode.map3 Region
-            (Decode.at [ "location", "from" ] position)
-            (Decode.at [ "location", "to" ] position)
-            (Decode.field "count" Decode.int)
+    Decode.map4 Region
+        (Decode.at [ "location", "from" ] position)
+        (Decode.at [ "location", "to" ] position)
+        (Decode.field "count" Decode.int)
+        (Decode.maybe <| Decode.field "complexity" Decode.int)
 
 
 type alias CoverageMap =
@@ -103,7 +104,7 @@ type alias Position =
 
 
 type Marker
-    = Begin Int
+    = Begin Int (Maybe Int)
     | End
 
 
@@ -112,7 +113,7 @@ type alias Context =
 
 
 type alias Region =
-    { from : Position, to : Position, count : Int }
+    { from : Position, to : Position, count : Int, complexity : Maybe Int }
 
 
 markup : String -> String -> Dict Int (List Marker) -> Html msg
@@ -137,18 +138,18 @@ lines coverageId input =
                     lineId =
                         coverageId ++ "_" ++ toString idx
                 in
-                    Html.div
-                        [ Attr.class "line", Attr.id lineId ]
-                        [ Html.a
-                            [ Attr.href <| "#" ++ lineId ]
-                            [ Html.text <| toString <| idx + 1 ]
-                        ]
+                Html.div
+                    [ Attr.class "line", Attr.id lineId ]
+                    [ Html.a
+                        [ Attr.href <| "#" ++ lineId ]
+                        [ Html.text <| toString <| idx + 1 ]
+                    ]
             )
 
 
 type alias Acc msg =
     { children : List (Content msg)
-    , stack : List ( Int, List (Content msg) )
+    , stack : List ( Int, Maybe Int, List (Content msg) )
     }
 
 
@@ -242,12 +243,12 @@ findIndent string =
                     rest =
                         String.slice spaces (String.length string) string
                 in
-                    if String.isEmpty rest then
-                        Indent spaces
-                    else if spaces == 0 then
-                        Part string
-                    else
-                        Indented spaces (String.slice spaces (String.length string) string)
+                if String.isEmpty rest then
+                    Indent spaces
+                else if spaces == 0 then
+                    Part string
+                else
+                    Indented spaces (String.slice spaces (String.length string) string)
            )
 
 
@@ -262,7 +263,7 @@ markupHelper original offset markers acc =
                         |> String.slice offset (String.length original)
                         |> stringParts
             in
-                { acc | children = rest :: acc.children }
+            { acc | children = rest :: acc.children }
 
         ( pos, markerList ) :: rest ->
             let
@@ -272,8 +273,8 @@ markupHelper original offset markers acc =
                         |> String.slice offset pos
                         |> stringParts
             in
-                consumeMarkers markerList { acc | children = readIn :: acc.children }
-                    |> markupHelper original pos rest
+            consumeMarkers markerList { acc | children = readIn :: acc.children }
+                |> markupHelper original pos rest
 
 
 consumeMarkers : List Marker -> Acc msg -> Acc msg
@@ -284,9 +285,9 @@ consumeMarkers markers acc =
 consumeMarker : Marker -> Acc msg -> Acc msg
 consumeMarker marker acc =
     case marker of
-        Begin cnt ->
+        Begin cnt complexity ->
             { children = []
-            , stack = ( cnt, acc.children ) :: acc.stack
+            , stack = ( cnt, complexity, acc.children ) :: acc.stack
             }
 
         End ->
@@ -294,22 +295,30 @@ consumeMarker marker acc =
                 [] ->
                     Debug.crash "unexpected end"
 
-                ( cnt, x ) :: xs ->
+                ( cnt, complexity, x ) :: xs ->
                     let
                         content : Content msg
                         content =
-                            wrap (wrapper cnt) acc.children
+                            wrap (wrapper cnt complexity) acc.children
                     in
-                        { children = content :: x
-                        , stack = xs
-                        }
+                    { children = content :: x
+                    , stack = xs
+                    }
 
 
-wrapper : Int -> List (Html msg) -> Html msg
-wrapper cnt =
+wrapper : Int  -> Maybe Int -> List (Html msg) -> Html msg
+wrapper cnt complexity =
+    let
+        content = case complexity of
+            Just c ->
+                "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
+
+            Nothing ->
+                "Evaluated " ++ toString cnt ++ " times."
+    in
     Html.span
         [ Attr.class <| toClass cnt
-        , Attr.title <| "Evaluated " ++ toString cnt ++ " times."
+        , Attr.title content
         ]
 
 
@@ -348,7 +357,7 @@ toMarkerDict regions offsets =
             Maybe.map2
                 (\from to ->
                     acc
-                        |> Dict.update from (addToListDict (Begin region.count))
+                        |> Dict.update from (addToListDict (Begin region.count region.complexity))
                         |> Dict.update to (addToListDict End)
                 )
                 (positionToOffset region.from offsets)
@@ -411,7 +420,7 @@ view model =
         coverageOverview =
             overview model.moduleMap
     in
-        container <| coverageOverview :: sourceCoverage
+    container <| coverageOverview :: sourceCoverage
 
 
 overview : ModuleMap -> Html msg
@@ -444,17 +453,17 @@ overview moduleMap =
                                     [ Attr.href <| "#" ++ moduleToId key ]
                                     [ Html.code [] [ Html.text key ] ]
                         in
-                            ( row (Just key) name counts :: rows
-                            , adjustedTotals
-                            )
+                        ( row (Just key) name counts :: rows
+                        , adjustedTotals
+                        )
                     )
                     ( [], Dict.empty )
     in
-        Html.table [ Attr.class "overview" ]
-            [ Html.thead [] [ heading totals ]
-            , Html.tbody [] rows
-            , Html.tfoot [] [ row Nothing (Html.text "total") totals ]
-            ]
+    Html.table [ Attr.class "overview" ]
+        [ Html.thead [] [ heading totals ]
+        , Html.tbody [] rows
+        , Html.tfoot [] [ row Nothing (Html.text "total") totals ]
+        ]
 
 
 heading : Dict String a -> Html msg
@@ -464,8 +473,8 @@ heading map =
         makeHead =
             shortHumanCoverageType >> Html.th []
     in
-        Html.tr []
-            (Html.th [] [] :: (Dict.keys map |> List.map makeHead))
+    Html.tr []
+        (Html.th [] [] :: (Dict.keys map |> List.map makeHead))
 
 
 computeCounts : CoverageMap -> Dict String ( Int, Int )
@@ -515,23 +524,23 @@ showCount moduleName coverageType ( used, total ) =
                     Nothing ->
                         content
         in
-            Html.td []
-                [ Html.div [ Attr.class "wrapper" ]
-                    [ Html.div
-                        [ Attr.class "info" ]
-                        [ link <|
-                            Html.text <|
-                                toString used
-                                    ++ "/"
-                                    ++ toString total
-                        ]
-                    , Html.progress
-                        [ Attr.max <| toString total
-                        , Attr.value <| toString used
-                        ]
-                        []
+        Html.td []
+            [ Html.div [ Attr.class "wrapper" ]
+                [ Html.div
+                    [ Attr.class "info" ]
+                    [ link <|
+                        Html.text <|
+                            toString used
+                                ++ "/"
+                                ++ toString total
                     ]
+                , Html.progress
+                    [ Attr.max <| toString total
+                    , Attr.value <| toString used
+                    ]
+                    []
                 ]
+            ]
 
 
 container : List (Html msg) -> Html msg
@@ -546,8 +555,8 @@ container content =
                     :: content
                 )
     in
-        -- Html.textarea [ Attr.value <| Html.toString 0 containerContent ] []
-        containerContent
+    -- Html.textarea [ Attr.value <| Html.toString 0 containerContent ] []
+    containerContent
 
 
 styles : String
@@ -705,9 +714,6 @@ body {
 shortHumanCoverageType : String -> List (Html msg)
 shortHumanCoverageType coverageType =
     case coverageType of
-        "expressions" ->
-            [ Html.text "Expressions" ]
-
         "caseBranches" ->
             [ Html.code [] [ Html.text "case" ]
             , Html.text " branches"
@@ -736,9 +742,6 @@ shortHumanCoverageType coverageType =
 humanCoverageType : String -> Html msg
 humanCoverageType coverageType =
     case coverageType of
-        "expressions" ->
-            Html.text "Expressions evaluated"
-
         "caseBranches" ->
             Html.span []
                 [ Html.code [] [ Html.text "case..of" ]
@@ -785,42 +788,42 @@ showCoverage moduleName coverageMap file =
         fileIndex =
             index file
     in
-        Html.div [ Attr.class "file" ]
-            (Html.h2 [ Attr.id <| moduleToId moduleName ]
-                [ Html.text "Module: "
-                , Html.code [] [ Html.text moduleName ]
-                ]
-                :: (Dict.toList coverageMap
-                        |> List.filterMap
-                            (\( coverageType, regions ) ->
-                                let
-                                    processedResult : Maybe (Html msg)
-                                    processedResult =
-                                        process coverageId file fileIndex regions
+    Html.div [ Attr.class "file" ]
+        (Html.h2 [ Attr.id <| moduleToId moduleName ]
+            [ Html.text "Module: "
+            , Html.code [] [ Html.text moduleName ]
+            ]
+            :: (Dict.toList coverageMap
+                    |> List.filterMap
+                        (\( coverageType, regions ) ->
+                            let
+                                processedResult : Maybe (Html msg)
+                                processedResult =
+                                    process coverageId file fileIndex regions
 
-                                    coverageId : String
-                                    coverageId =
-                                        moduleCoverageId
-                                            moduleName
-                                            coverageType
-                                in
-                                    case processedResult of
-                                        Just processed ->
-                                            Just <|
-                                                Html.div []
-                                                    [ Html.h3
-                                                        [ Attr.id coverageId ]
-                                                        [ humanCoverageType
-                                                            coverageType
-                                                        ]
-                                                    , processed
-                                                    ]
+                                coverageId : String
+                                coverageId =
+                                    moduleCoverageId
+                                        moduleName
+                                        coverageType
+                            in
+                            case processedResult of
+                                Just processed ->
+                                    Just <|
+                                        Html.div []
+                                            [ Html.h3
+                                                [ Attr.id coverageId ]
+                                                [ humanCoverageType
+                                                    coverageType
+                                                ]
+                                            , processed
+                                            ]
 
-                                        Nothing ->
-                                            Nothing
-                            )
-                   )
-            )
+                                Nothing ->
+                                    Nothing
+                        )
+               )
+        )
 
 
 process : String -> String -> Dict Position Int -> List Region -> Maybe (Html msg)
@@ -834,4 +837,4 @@ process coverageId input index regions =
                 markerDict =
                     toMarkerDict regions index
             in
-                Just <| markup coverageId input markerDict
+            Just <| markup coverageId input markerDict
