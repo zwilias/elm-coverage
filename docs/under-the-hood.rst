@@ -1,10 +1,12 @@
-Under the hood ==============
+Under the hood
+==============
 
 ``elm-coverage`` consists of a fair number of moving parts. This is my attempt
 to document how those parts work together, and which part is responsible for
 what.
 
-The runner ----------
+The runner
+----------
 
 The *runner* or *supervisor* is the main entrypoint and is responsible for
 glueing all the pieces together to a coherent whole.
@@ -22,7 +24,8 @@ Its responsibilities are roughly these:
   report
 - Optionally, try to open the generated report in the user's browser
 
-Instrumenting with ``elm-instrument`` -------------------------------------
+Instrumenting with ``elm-instrument``
+-------------------------------------
 
 Instrumentation is handled by an AST->AST transformation implemented in a fork
 of ``elm-format`` - since that project happens to have the highest quality
@@ -43,7 +46,8 @@ a ``let .. in ..`` approach rather than wrapping the expressions in an
 elimintation, as the final expression to be evaluated in any expression remains
 the same.
 
-The ``Coverage`` module -----------------------
+The ``Coverage`` module
+-----------------------
 
 The ``Coverage`` module, through the calls to it added by ``elm-instrument``,
 keeps track of how many times each instrumented expression is evaluated. During
@@ -74,7 +78,8 @@ together with their locations in the original source. For some types of
 expression, we also receive a name (top-level declarations) and the cyclomatic
 complexity (top-level declarations, let-declarations and lambdas).
 
-The analyzer ------------
+The analyzer
+------------
 
 The analyzer is a thin wrapper around an Elm module. The wrapper reads in all
 the coverage files (waiting for the respective ``.marker`` file to be created).
