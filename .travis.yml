@@ -2,8 +2,8 @@ sudo: false
 
 language: node_js
 node_js:
-    - "node"
-#    - "4"
+  - "node"
+  - "4"
 
 cache:
   directories:
@@ -11,12 +11,12 @@ cache:
     - node_modules
 
 os:
-#  - linux
+  - linux
   - osx
 
 env: ELM_VERSION=0.18.0
 env:
-#  - ELM_TEST_VERSION=0.18.2
+  - ELM_TEST_VERSION=0.18.2
   - ELM_TEST_VERSION=latest
 
 git:
