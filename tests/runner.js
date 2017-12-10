@@ -10,9 +10,10 @@ describe("The runner", function() {
         var process = spawn.spawn(elmCoverage, ["--help"]);
         var output = "";
 
-        process.stderr.on("data", console.error);
+        process.stderr.on("data", function(data) {
+            console.error(data.toString());
+        });
         process.stdout.on("data", function(data) {
-            console.log(data);
             output += data;
         });
 
