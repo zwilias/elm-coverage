@@ -18,6 +18,9 @@ env:
   - ELM_TEST_VERSION=0.18.2
   - ELM_TEST_VERSION=latest
 
+git:
+  submodules: false
+
 before_install:
   - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
     if [ ! -d sysconfcpus/bin ];
@@ -28,6 +31,8 @@ before_install:
       make && make install;
       cd ..;
     fi
+  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+  - git submodule update --init --recursive
 
 install:
   - node --version
