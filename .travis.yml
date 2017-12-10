@@ -22,8 +22,6 @@ git:
   submodules: false
 
 before_install:
-  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-  - git submodule update --init --recursive
   - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
     if [ ! -d sysconfcpus/bin ];
     then
