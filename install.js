@@ -9,7 +9,7 @@ var arch = process.arch;
 var operatingSystem = process.platform;
 
 var filename = operatingSystem + "-" + arch + ".tar.gz";
-var version = "0.0.2";
+var version = "0.0.3";
 var url =
     "https://dl.bintray.com/zwilias/elm-coverage/elm-instrument/" +
     version +
