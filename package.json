@@ -6,7 +6,6 @@
     "repository": "zwilias/elm-coverage",
     "devDependencies": {
         "chai": "^4.1.2",
-        "elm": "^0.18.0",
         "jscodeshift": "^0.3.32",
         "mocha": "^4.0.1",
         "shelljs": "^0.7.8"
