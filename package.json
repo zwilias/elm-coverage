@@ -5,8 +5,11 @@
     "homepage": "https://github.com/zwilias/elm-coverage#readme",
     "repository": "zwilias/elm-coverage",
     "devDependencies": {
+        "chai": "^4.1.2",
         "elm": "^0.18.0",
-        "jscodeshift": "^0.3.32"
+        "jscodeshift": "^0.3.32",
+        "mocha": "^4.0.1",
+        "shelljs": "^0.7.8"
     },
     "dependencies": {
         "bluebird": "^3.5.1",
@@ -39,6 +42,7 @@
         "make:opt-chareq": "jscodeshift -t codemods/optimizeCharEquality.js lib/analyzer.js",
         "make": "npm run make:elm && npm run make:opt-astar && npm run make:opt-chareq",
         "prepublishOnly": "npm run make",
-        "install": "node install.js"
+        "install": "node install.js",
+        "test": "mocha tests"
     }
 }
