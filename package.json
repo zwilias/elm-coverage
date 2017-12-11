@@ -4,6 +4,7 @@
     "license": "BSD-3-Clause",
     "homepage": "https://github.com/zwilias/elm-coverage#readme",
     "repository": "zwilias/elm-coverage",
+    "main": "install.js",
     "devDependencies": {
         "chai": "^4.1.2",
         "jscodeshift": "^0.3.32",
@@ -11,6 +12,7 @@
         "shelljs": "^0.7.8"
     },
     "dependencies": {
+        "binwrap": "^0.1.4",
         "bluebird": "^3.5.1",
         "cross-spawn": "^5.1.0",
         "find": "^0.2.7",
@@ -18,10 +20,10 @@
         "lodash": "^4.17.4",
         "moment": "^2.19.3",
         "opn": "^5.1.0",
+        "request": "^2.83.0",
         "tmp": "0.0.33",
         "touch": "^3.1.0",
-        "yargs": "^10.0.3",
-        "binstall": "^1.2.0"
+        "yargs": "^10.0.3"
     },
     "bin": {
         "elm-coverage": "bin/elm-coverage",
@@ -40,8 +42,8 @@
         "make:opt-astar": "jscodeshift -t codemods/eliminateRedundantAStar.js lib/analyzer.js",
         "make:opt-chareq": "jscodeshift -t codemods/optimizeCharEquality.js lib/analyzer.js",
         "make": "npm run make:elm && npm run make:opt-astar && npm run make:opt-chareq",
-        "prepublishOnly": "npm run make",
-        "install": "node install.js",
-        "test": "mocha tests"
+        "prepublishOnly": "npm run make && npm run test",
+        "test": "binwrap-test && mocha tests",
+        "install": "binwrap-install"
     }
 }
