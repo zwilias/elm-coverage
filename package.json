@@ -43,7 +43,8 @@
         "make:opt-chareq": "jscodeshift -t codemods/optimizeCharEquality.js lib/analyzer.js",
         "make": "npm run make:elm && npm run make:opt-astar && npm run make:opt-chareq",
         "prepublishOnly": "npm run make && npm run test",
-        "test": "binwrap-test && mocha tests",
+        "test": "binwrap-test && npm run test:unit",
+	"test:unit": "mocha tests",
         "install": "binwrap-install"
     }
 }
