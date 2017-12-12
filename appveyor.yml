@@ -1,17 +1,9 @@
 environment:
   ELM_VERSION: "0.18.0"
+  ELM_TEST_VERSION: "latest"
   matrix:
   - NODE_VERSION: "8"
-    ELMTEST_VERSION: "latest"
-
-  - NODE_VERSION: "8"
-    ELMTEST_VERSION: "0.18.2"
-    
   - NODE_VERSION: "4"
-    ELMTEST_VERSION: "latest"
-    
-  - NODE_VERSION: "4"
-    ELMTEST_VERSION: "0.18.2"
 
 platform:
   - x86
@@ -24,7 +16,7 @@ install:
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:NODE_VERSION) $env:Platform
   - node --version
   - npm --version
-  - npm install -g elm@%ELM_VERSION% elm-test@ELMTEST_VERSION
+  - npm install -g elm@%ELM_VERSION% elm-test@%ELMTEST_VERSION%
   - npm install
 
 test_script:
