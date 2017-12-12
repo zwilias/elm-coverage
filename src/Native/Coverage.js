@@ -68,6 +68,7 @@ var _user$project$Native_Coverage = (function() {
         }
 
         exiting = true;
+
         console.log("Child exiting, writing coverage...");
         fs.writeFileSync(
             "../../../../.coverage/coverage-" + process.pid + ".json",
@@ -77,14 +78,10 @@ var _user$project$Native_Coverage = (function() {
             "../../../../.coverage/coverage-" + process.pid + ".created",
             ""
         );
+        console.log("Coverage info written.");
     };
 
-    setTimeout(function() {
-        if (client) {
-            client.on("end", cleanupHandler);
-        }
-    }, 0);
-
+    process.on("SIGINT", cleanupHandler);
     process.on("exit", cleanupHandler);
 
     return {
