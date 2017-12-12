@@ -2,7 +2,7 @@ environment:
   ELM_VERSION: "0.18.0"
   ELM_TEST_VERSION: "latest"
   APPVEYOR_RDP_PASSWORD:
-    secure: szYoD0UcFlur/8Hq3WXG8wN0AfmFqaiiibfuhxe9k1c=
+    secure: QRKyprxCq+yWBbuOlYFGIPl8n2b05U3q7fAupLYdUKA=
   matrix:
   - NODE_VERSION: "8"
   - NODE_VERSION: "4"
