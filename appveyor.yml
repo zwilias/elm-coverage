@@ -18,6 +18,7 @@ install:
   - npm --version
   - npm install -g elm@%ELM_VERSION% elm-test@%ELMTEST_VERSION%
   - npm install
+  - npm run make
 
 test_script:
   - npm test
