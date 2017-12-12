@@ -61,7 +61,7 @@ var _user$project$Native_Coverage = (function() {
         return absurd;
     };
 
-    process.on("exit", function() {
+    process.on("disconnect", function() {
         console.log("Child exiting, writing coverage...");
         fs.writeFileSync(
             "../../../../.coverage/coverage-" + process.pid + ".json",
