@@ -33,6 +33,10 @@ describe("E2E tests", function() {
             cwd: path.join("tests", "data", "simple")
         });
 
+        process.stdout.on("data", function(data) {
+            console.log(data.toString());
+        });
+
         process.stderr.on("data", function(data) {
             console.error(data.toString());
         });
