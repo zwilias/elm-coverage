@@ -61,18 +61,17 @@ var _user$project$Native_Coverage = (function() {
         return absurd;
     };
 
-    if (process) {
-        process.on("exit", function() {
-            fs.writeFileSync(
-                "../../../../.coverage/coverage-" + process.pid + ".json",
-                JSON.stringify(counters)
-            );
-            fs.writeFileSync(
-                "../../../../.coverage/coverage-" + process.pid + ".created",
-                ""
-            );
-        });
-    }
+    process.on("exit", function() {
+        console.log("Child exiting, writing coverage...");
+        fs.writeFileSync(
+            "../../../../.coverage/coverage-" + process.pid + ".json",
+            JSON.stringify(counters)
+        );
+        fs.writeFileSync(
+            "../../../../.coverage/coverage-" + process.pid + ".created",
+            ""
+        );
+    });
 
     return {
         declaration: declaration,
