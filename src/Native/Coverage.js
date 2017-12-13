@@ -81,8 +81,7 @@ var _user$project$Native_Coverage = (function() {
         console.log("Coverage info written.");
     };
 
-    process.on("SIGINT", cleanupHandler);
-    process.on("exit", cleanupHandler);
+    process.on("disconnect", cleanupHandler);
 
     return {
         declaration: declaration,
