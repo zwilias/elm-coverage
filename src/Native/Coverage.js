@@ -46,11 +46,6 @@ var _user$project$Native_Coverage = (function() {
     }
 
     var init = function(moduleName, settings) {
-        fs.writeFileSync(
-            "../../../../.coverage/coverage-" + process.pid + ".marker",
-            ""
-        );
-
         fileMap.push(moduleName);
         Object.keys(settings).forEach(function(counter) {
             counters[moduleName] = counters[moduleName] || {};
@@ -63,28 +58,19 @@ var _user$project$Native_Coverage = (function() {
 
     var exiting = false;
     var cleanupHandler = function() {
-        console.log("exiting");
-        if (exiting) {
-            return;
-        }
-
-        exiting = true;
-
-        console.log("Child exiting, writing coverage...");
         fs.writeFileSync(
             "../../../../.coverage/coverage-" + process.pid + ".json",
             JSON.stringify(counters)
         );
-        fs.writeFileSync(
-            "../../../../.coverage/coverage-" + process.pid + ".created",
-            ""
-        );
-        console.log("Coverage info written.");
     };
 
-    // process.on("disconnect", cleanupHandler);
-    setTimeout(function () {
-        app.ports.finished.subscribe(cleanupHandler);
+    setTimeout(function() {
+        app.ports.send.subscribe(function(rawData) {
+            var data = JSON.parse(rawData);
+            if (data.type === "FINISHED") {
+                cleanupHandler();
+            }
+        });
     });
 
     return {
