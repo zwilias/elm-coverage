@@ -63,6 +63,7 @@ var _user$project$Native_Coverage = (function() {
 
     var exiting = false;
     var cleanupHandler = function() {
+        console.log("exiting");
         if (exiting) {
             return;
         }
@@ -81,7 +82,10 @@ var _user$project$Native_Coverage = (function() {
         console.log("Coverage info written.");
     };
 
-    process.on("disconnect", cleanupHandler);
+    // process.on("disconnect", cleanupHandler);
+    setTimeout(function () {
+        app.ports.finished.subscribe(cleanupHandler);
+    });
 
     return {
         declaration: declaration,
