@@ -49,18 +49,6 @@ the same.
 The ``Coverage`` module
 -----------------------
 
-The ``Coverage`` module, through the calls to it added by ``elm-instrument``,
-keeps track of how many times each instrumented expression is evaluated. During
-initialization, the ``Coverage`` module writes away a marker file. During
-process shutdown, the coverage data is recorded in a ``.json`` file, after which
-the coverage gathering is complete and a second marker file is created.
-
-Each of these files has a similar name:
-
-- ``coverage-{{pid}}.created`` - coverage started
-- ``coverage-{{pid}}.json`` - coverage data
-- ``coverage-{{pid}}.marker`` - coverage done
-
 Internally, the ``Coverage`` module exposes a number of special purpose
 function, each marking a particular type of expression. These calls all have the
 same shape::
@@ -78,13 +66,16 @@ together with their locations in the original source. For some types of
 expression, we also receive a name (top-level declarations) and the cyclomatic
 complexity (top-level declarations, let-declarations and lambdas).
 
+When the active process signals `elm-test` that all of its tests have finished
+running, the coverage data is persisted to disk in a ``coverage-{{pid}}.json``
+file.
+
 The analyzer
 ------------
 
 The analyzer is a thin wrapper around an Elm module. The wrapper reads in all
-the coverage files (waiting for the respective ``.marker`` file to be created).
-Once all the data is aggregated, the original source files are read and the
-whole shebang is sent off to the Elm module.
+the coverage files. Once all the data is aggregated, the original source files
+are read and the whole shebang is sent off to the Elm module.
 
 The Elm module, in turn, parses all that data and creates the HTML report,
 returning the generated report as a String over a port.
