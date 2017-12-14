@@ -7,11 +7,21 @@ import Json.Decode as Decode exposing (Decoder)
 import Platform
 
 
-main : Program Flags Model msg
+port coverage : String -> Cmd msg
+
+
+{-| Do the heavy lifting: render and stringify
+-}
+dump : Model -> ( (), Cmd msg )
+dump =
+    view >> Html.toString 0 >> coverage >> (,) ()
+
+
+main : Program Flags () msg
 main =
     Platform.programWithFlags
         { init = init
-        , update = \_ m -> m ! []
+        , update = \_ _ -> () ! []
         , subscriptions = always Sub.none
         }
 
@@ -22,11 +32,6 @@ type alias Model =
     }
 
 
-emptyModel : Model
-emptyModel =
-    { inputs = Dict.empty, moduleMap = Dict.empty }
-
-
 type alias Flags =
     { coverage : Decode.Value
     , files : List ( String, String )
@@ -35,34 +40,32 @@ type alias Flags =
 
 flagsToModel : Flags -> Model
 flagsToModel flags =
-    let
-        moduleMap =
-            Decode.decodeValue regionsDecoder flags.coverage
-                |> Result.withDefault Dict.empty
-    in
-    { moduleMap = moduleMap
+    { moduleMap =
+        Decode.decodeValue regionsDecoder flags.coverage
+            |> Result.withDefault Dict.empty
     , inputs = Dict.fromList flags.files
     }
 
 
-init : Flags -> ( Model, Cmd msg )
-init flags =
-    let
-        model : Model
-        model =
-            flagsToModel flags
-    in
-    ( model
-    , dump model
-    )
+init : Flags -> ( (), Cmd msg )
+init =
+    flagsToModel >> dump
 
 
-port coverage : String -> Cmd msg
+type alias Position =
+    ( Int, Int )
 
 
-dump : Model -> Cmd msg
-dump =
-    view >> Html.toString 0 >> coverage
+type alias Region =
+    { from : Position, to : Position, count : Int, complexity : Maybe Int }
+
+
+type alias CoverageMap =
+    Dict String (List Region)
+
+
+type alias ModuleMap =
+    Dict String CoverageMap
 
 
 regionDecoder : Decoder Region
@@ -81,12 +84,9 @@ regionDecoder =
         (Decode.maybe <| Decode.field "complexity" Decode.int)
 
 
-type alias CoverageMap =
-    Dict String (List Region)
-
-
-type alias ModuleMap =
-    Dict String CoverageMap
+regionsDecoder : Decoder ModuleMap
+regionsDecoder =
+    dictDec <| dictDec <| Decode.list regionDecoder
 
 
 dictDec : Decoder a -> Decoder (Dict String a)
@@ -94,26 +94,9 @@ dictDec =
     Decode.keyValuePairs >> Decode.map Dict.fromList
 
 
-regionsDecoder : Decoder ModuleMap
-regionsDecoder =
-    dictDec <| dictDec <| Decode.list regionDecoder
-
-
-type alias Position =
-    ( Int, Int )
-
-
 type Marker
     = Begin Int (Maybe Int)
     | End
-
-
-type alias Context =
-    Int
-
-
-type alias Region =
-    { from : Position, to : Position, count : Int, complexity : Maybe Int }
 
 
 markup : String -> String -> Dict Int (List Marker) -> Html msg
@@ -160,14 +143,14 @@ type Part
     | Indented Int String
 
 
-wrap : (List (Html msg) -> Html msg) -> List (Content msg) -> Content msg
-wrap wrapper content =
-    Content (List.singleton >> wrapper) content
-
-
 type Content msg
     = Plain (List Part)
     | Content (Html msg -> Html msg) (List (Content msg))
+
+
+wrap : (List (Html msg) -> Html msg) -> List (Content msg) -> Content msg
+wrap wrapper content =
+    Content (List.singleton >> wrapper) content
 
 
 toHtml : List (Content msg) -> List (Html msg)
@@ -199,26 +182,30 @@ partToHtml tagger part =
             [ Html.br [] [] ]
 
         Indent indent ->
-            [ whitespace indent ]
+            whitespace indent
 
         Indented indent content ->
-            [ tagger <| Html.text content
-            , whitespace indent
-            ]
+            (tagger <| Html.text content) :: whitespace indent
 
 
-whitespace : Int -> Html msg
+whitespace : Int -> List (Html msg)
 whitespace indent =
-    Html.span
-        [ Attr.class "whitespace" ]
-        [ Html.text <| String.repeat indent " " ]
+    case indent of
+        0 ->
+            []
+
+        _ ->
+            [ Html.span
+                [ Attr.class "whitespace" ]
+                [ Html.text <| String.repeat indent " " ]
+            ]
 
 
 stringParts : String -> Content msg
 stringParts string =
     case String.lines string of
         [] ->
-            Debug.crash "nope"
+            Plain []
 
         head :: rest ->
             (Part head :: List.map findIndent rest)
@@ -229,52 +216,51 @@ stringParts string =
 
 findIndent : String -> Part
 findIndent string =
-    String.foldl
-        (\c ( spaces, continue ) ->
+    let
+        countIndentLength : Char -> ( Int, Bool ) -> ( Int, Bool )
+        countIndentLength c ( spaces, continue ) =
             if continue && c == ' ' then
                 ( spaces + 1, True )
             else
                 ( spaces, False )
-        )
-        ( 0, True )
-        string
-        |> (\( spaces, _ ) ->
-                let
-                    rest =
-                        String.slice spaces (String.length string) string
-                in
-                if String.isEmpty rest then
-                    Indent spaces
-                else if spaces == 0 then
-                    Part string
-                else
-                    Indented spaces (String.slice spaces (String.length string) string)
-           )
+
+        toIndentedString : Int -> Part
+        toIndentedString spaces =
+            if String.length string == spaces then
+                Indent spaces
+            else if spaces == 0 then
+                Part string
+            else
+                String.slice spaces (String.length string) string
+                    |> Indented spaces
+    in
+    string
+        |> String.foldl countIndentLength ( 0, True )
+        |> Tuple.first
+        |> toIndentedString
 
 
 markupHelper : String -> Int -> List ( Int, List Marker ) -> Acc msg -> Acc msg
 markupHelper original offset markers acc =
+    let
+        rest : String -> Content msg
+        rest input =
+            input
+                |> String.slice offset (String.length input)
+                |> stringParts
+
+        readUntil : Int -> String -> Content msg
+        readUntil pos =
+            String.slice offset pos >> stringParts
+    in
     case markers of
         [] ->
-            let
-                rest : Content msg
-                rest =
-                    original
-                        |> String.slice offset (String.length original)
-                        |> stringParts
-            in
-            { acc | children = rest :: acc.children }
+            { acc | children = rest original :: acc.children }
 
-        ( pos, markerList ) :: rest ->
-            let
-                readIn : Content msg
-                readIn =
-                    original
-                        |> String.slice offset pos
-                        |> stringParts
-            in
-            consumeMarkers markerList { acc | children = readIn :: acc.children }
-                |> markupHelper original pos rest
+        ( pos, markerList ) :: otherMarkers ->
+            { acc | children = readUntil pos original :: acc.children }
+                |> consumeMarkers markerList
+                |> markupHelper original pos otherMarkers
 
 
 consumeMarkers : List Marker -> Acc msg -> Acc msg
@@ -353,8 +339,9 @@ regionOrder left right =
 
 toMarkerDict : List Region -> Dict Position Int -> Dict Int (List Marker)
 toMarkerDict regions offsets =
-    List.foldl
-        (\region acc ->
+    let
+        addRegion : Region -> Dict Int (List Marker) -> Dict Int (List Marker)
+        addRegion region acc =
             Maybe.map2
                 (\from to ->
                     acc
@@ -364,9 +351,8 @@ toMarkerDict regions offsets =
                 (positionToOffset region.from offsets)
                 (positionToOffset region.to offsets)
                 |> Maybe.withDefault acc
-        )
-        Dict.empty
-        regions
+    in
+    List.foldl addRegion Dict.empty regions
 
 
 positionToOffset : Position -> Dict Position Int -> Maybe Int
