@@ -1,5 +1,6 @@
-port module Analyzer exposing (..)
+port module Analyzer exposing (main)
 
+import Array.Hamt as Array exposing (Array)
 import Dict.LLRB as Dict exposing (Dict)
 import Html.String as Html exposing (Html)
 import Html.String.Attributes as Attr
@@ -327,17 +328,7 @@ addToListDict a m =
             Just <| a :: xs
 
 
-regionOrder : Region -> Region -> Order
-regionOrder left right =
-    if left.from == right.from && left.to == right.to then
-        EQ
-    else if left.from < right.from then
-        LT
-    else
-        compare left.to right.to
-
-
-toMarkerDict : List Region -> Dict Position Int -> Dict Int (List Marker)
+toMarkerDict : List Region -> Index -> Dict Int (List Marker)
 toMarkerDict regions offsets =
     let
         addRegion : Region -> Dict Int (List Marker) -> Dict Int (List Marker)
@@ -355,39 +346,28 @@ toMarkerDict regions offsets =
     List.foldl addRegion Dict.empty regions
 
 
-positionToOffset : Position -> Dict Position Int -> Maybe Int
-positionToOffset =
-    Dict.get
+type alias Index =
+    Array Int
 
 
-index : String -> Dict Position Int
+positionToOffset : Position -> Index -> Maybe Int
+positionToOffset ( line, column ) idx =
+    Array.get (line - 1) idx
+        |> Maybe.map (\offSet -> offSet + column - 1)
+
+
+index : String -> Index
 index input =
     input
         |> String.lines
-        |> List.foldl indexLine ( 0, 1, Dict.empty )
-        |> (\( _, _, acc ) -> acc)
-
-
-indexLine : String -> ( Int, Int, Dict Position Int ) -> ( Int, Int, Dict Position Int )
-indexLine string ( offset, line, acc ) =
-    string
-        |> String.foldl (indexChar line) ( offset, 1, acc )
-        |> (\( offset, col, acc ) ->
-                ( -- skip newline
-                  offset + 1
-                  -- go to next line
-                , line + 1
-                , Dict.insert ( line, col ) offset acc
+        |> List.foldl
+            (\line ( acc, sum ) ->
+                ( Array.push sum acc
+                , sum + String.length line + 1
                 )
-           )
-
-
-indexChar : Int -> a -> ( Int, Int, Dict Position Int ) -> ( Int, Int, Dict Position Int )
-indexChar line _ ( offset, column, acc ) =
-    ( offset + 1
-    , column + 1
-    , Dict.insert ( line, column ) offset acc
-    )
+            )
+            ( Array.empty, 0 )
+        |> Tuple.first
 
 
 view : Model -> Html msg
@@ -823,7 +803,7 @@ showCoverage moduleName coverageMap file =
         )
 
 
-process : String -> String -> Dict Position Int -> List Region -> Maybe (Html msg)
+process : String -> String -> Index -> List Region -> Maybe (Html msg)
 process coverageId input index regions =
     case regions of
         [] ->
