@@ -31,40 +31,47 @@ Instrumentation is handled by an AST->AST transformation implemented in a fork
 of ``elm-format`` - since that project happens to have the highest quality
 parser+writer in the ecosystem, battle-tested on hundreds of projects.
 
-The transformation traverses the entire syntax tree of every module, wrapping
-expressions in calls to the relevant ``Coverage.*`` function and computing
-complexity along the way.
+The AST is traversed and modified while also keeping track of a few bit of
+information. Certain expressions (specifically the bodies of declarations,
+let-declarations, lambda's, if/else branches and case..of branches) are
+instrumented with a ``let _ = Coverage.track <moduleIdentifier>
+<expressionIdentifier> in`` expression. Whenever instrumentation is added, some
+information about the instrumented expression is tracked.
 
-Finally, the modified body is rendered and the original file replaced. An extra
-import for the ``Coverage`` module is added, and an extra top-level call to
-``Coverage.init`` appended.
 
-Expressions are annotated by wrapping them in a ``let .. in .. `` block.
-Subsequent ``let`` blocks are collapsed into a single block. A reason for using
-a ``let .. in ..`` approach rather than wrapping the expressions in an
-``identity``\ -like function is that the compiler can do its regular tail-call
-elimintation, as the final expression to be evaluated in any expression remains
-the same.
++---------------+----------+----------+----------+
+|               |Source    |Cyclomatic|Name      |
+|               |location  |complexity|          |
++===============+==========+==========+==========+
+|**Declaration**|x         |x         |x         |
++---------------+----------+----------+----------+
+|**Let          |x         |x         |          |
+|declaration**  |          |          |          |
++---------------+----------+----------+----------+
+|**Lambda body**|x         |x         |          |
++---------------+----------+----------+----------+
+|**if/else      |x         |          |          |
+|branch**       |          |          |          |
++---------------+----------+----------+----------+
+|**case..of     |x         |          |          |
+|branch**       |          |          |          |
++---------------+----------+----------+----------+
+
+The recorded information is accumulated for all instrumented modules and
+persisted to ``.coverage/info.json``.
 
 The ``Coverage`` module
 -----------------------
 
-Internally, the ``Coverage`` module exposes a number of special purpose
-function, each marking a particular type of expression. These calls all have the
-same shape::
+The ``Coverage`` module, which is "linked in" by the runner, exposes a single
+function::
 
-    Coverage.{{expressionType}} : String -> Int -> Never -> a
+    Coverage.track : String -> Int -> Never -> a
 
-It is passed the module-name and an offset in the total list of expressions of
-that same type, and returns a function that can never be called. When evaluated,
-the internal coverage-data is updated; incrementing a simple counter based on
-the module-name and offset.
-
-Separately, there is also a top-level call to `Coverage.init`, in which the
-module is identified and a list of all the tracked expressions is passed,
-together with their locations in the original source. For some types of
-expression, we also receive a name (top-level declarations) and the cyclomatic
-complexity (top-level declarations, let-declarations and lambdas).
+It is passed the module-name and an offset in the total list of track
+expressions of a module, and returns a function that can never be called. When
+evaluated, the internal coverage-data is updated; incrementing a simple counter
+based on the module-name and offset.
 
 When the active process signals `elm-test` that all of its tests have finished
 running, the coverage data is persisted to disk in a ``coverage-{{pid}}.json``
@@ -73,9 +80,11 @@ file.
 The analyzer
 ------------
 
-The analyzer is a thin wrapper around an Elm module. The wrapper reads in all
-the coverage files. Once all the data is aggregated, the original source files
-are read and the whole shebang is sent off to the Elm module.
+The analyzer is a thin wrapper around an Elm module. The wrapper reads in the
+``info.json`` file created by the instrumenter, all the coverage files created
+by the ``elm-test`` run, and all the sources of the referenced files. Once all
+the data is read, it is bundled up and sent off to an Elm module for further
+processing.
 
-The Elm module, in turn, parses all that data and creates the HTML report,
-returning the generated report as a String over a port.
+The Elm module parses all that data and creates the HTML report, returning the
+generated report as a String over a port.
