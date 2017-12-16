@@ -29,7 +29,7 @@ main =
 
 type alias Model =
     { inputs : Dict String String
-    , moduleMap : ModuleMap
+    , moduleMap : CoverageMap
     }
 
 
@@ -58,15 +58,37 @@ type alias Position =
 
 
 type alias Region =
-    { from : Position, to : Position, count : Int, complexity : Maybe Int }
+    { from : Position, to : Position }
 
 
 type alias CoverageMap =
-    Dict String (List Region)
+    Dict String (List AnnotationInfo)
 
 
-type alias ModuleMap =
-    Dict String CoverageMap
+type alias Name =
+    String
+
+
+type alias Complexity =
+    Int
+
+
+type Annotation
+    = Declaration Name Complexity
+    | LetDeclaration Complexity
+    | LambdaBody Complexity
+    | CaseBranch
+    | IfElseBranch
+
+
+type alias Located a =
+    ( Region, a )
+
+
+{-| An annotation with an evaluation-count and a location.
+-}
+type alias AnnotationInfo =
+    Located ( Annotation, Int )
 
 
 regionDecoder : Decoder Region
@@ -78,16 +100,49 @@ regionDecoder =
                 (Decode.field "line" Decode.int)
                 (Decode.field "column" Decode.int)
     in
-    Decode.map4 Region
-        (Decode.at [ "location", "from" ] position)
-        (Decode.at [ "location", "to" ] position)
-        (Decode.field "count" Decode.int)
-        (Decode.maybe <| Decode.field "complexity" Decode.int)
+    Decode.map2 Region
+        (Decode.field "from" position)
+        (Decode.field "to" position)
 
 
-regionsDecoder : Decoder ModuleMap
+annotationInfoDecoder : Decoder AnnotationInfo
+annotationInfoDecoder =
+    Decode.map2 (,)
+        regionDecoder
+        (Decode.map2 (,) annotationDecoder evaluationCountDecoder)
+
+
+evaluationCountDecoder : Decoder Int
+evaluationCountDecoder =
+    Decode.oneOf [ Decode.field "count" Decode.int, Decode.succeed 0 ]
+
+
+fieldIs : String -> String -> Decoder a -> Decoder a
+fieldIs fieldName expectedValue decoder =
+    Decode.field fieldName Decode.string
+        |> Decode.andThen
+            (\actual ->
+                if actual == expectedValue then
+                    decoder
+                else
+                    Decode.fail "not this one"
+            )
+
+
+annotationDecoder : Decoder Annotation
+annotationDecoder =
+    Decode.oneOf
+        [ fieldIs "type" "declaration" (Decode.map2 Declaration (Decode.field "name" Decode.string) (Decode.field "complexity" Decode.int))
+        , fieldIs "type" "letDeclaration" (Decode.map LetDeclaration (Decode.field "complexity" Decode.int))
+        , fieldIs "type" "lambdaBody" (Decode.map LambdaBody (Decode.field "complexity" Decode.int))
+        , fieldIs "type" "caseBranch" (Decode.succeed CaseBranch)
+        , fieldIs "type" "ifElseBranch" (Decode.succeed IfElseBranch)
+        ]
+
+
+regionsDecoder : Decoder CoverageMap
 regionsDecoder =
-    dictDec <| dictDec <| Decode.list regionDecoder
+    dictDec <| Decode.list annotationInfoDecoder
 
 
 dictDec : Decoder a -> Decoder (Dict String a)
@@ -96,7 +151,7 @@ dictDec =
 
 
 type Marker
-    = Begin Int (Maybe Int)
+    = Begin Int Annotation
     | End
 
 
@@ -133,7 +188,7 @@ lines coverageId input =
 
 type alias Acc msg =
     { children : List (Content msg)
-    , stack : List ( Int, Maybe Int, List (Content msg) )
+    , stack : List ( Int, Annotation, List (Content msg) )
     }
 
 
@@ -272,9 +327,9 @@ consumeMarkers markers acc =
 consumeMarker : Marker -> Acc msg -> Acc msg
 consumeMarker marker acc =
     case marker of
-        Begin cnt complexity ->
+        Begin cnt annotation ->
             { children = []
-            , stack = ( cnt, complexity, acc.children ) :: acc.stack
+            , stack = ( cnt, annotation, acc.children ) :: acc.stack
             }
 
         End ->
@@ -293,15 +348,21 @@ consumeMarker marker acc =
                     }
 
 
-wrapper : Int -> Maybe Int -> List (Html msg) -> Html msg
-wrapper cnt complexity =
+wrapper : Int -> Annotation -> List (Html msg) -> Html msg
+wrapper cnt annotation =
     let
         content =
-            case complexity of
-                Just c ->
+            case annotation of
+                Declaration _ c ->
                     "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
 
-                Nothing ->
+                LetDeclaration c ->
+                    "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
+
+                LambdaBody c ->
+                    "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
+
+                _ ->
                     "Evaluated " ++ toString cnt ++ " times."
     in
     Html.span
@@ -328,15 +389,15 @@ addToListDict a m =
             Just <| a :: xs
 
 
-toMarkerDict : List Region -> Index -> Dict Int (List Marker)
+toMarkerDict : List AnnotationInfo -> Index -> Dict Int (List Marker)
 toMarkerDict regions offsets =
     let
-        addRegion : Region -> Dict Int (List Marker) -> Dict Int (List Marker)
-        addRegion region acc =
+        addRegion : AnnotationInfo -> Dict Int (List Marker) -> Dict Int (List Marker)
+        addRegion ( region, ( annotation, count ) ) acc =
             Maybe.map2
                 (\from to ->
                     acc
-                        |> Dict.update from (addToListDict (Begin region.count region.complexity))
+                        |> Dict.update from (addToListDict (Begin count annotation))
                         |> Dict.update to (addToListDict End)
                 )
                 (positionToOffset region.from offsets)
@@ -378,9 +439,9 @@ view model =
             model.moduleMap
                 |> Dict.toList
                 |> List.filterMap
-                    (\( key, coverageTypes ) ->
+                    (\( key, coverageInfo ) ->
                         Dict.get key model.inputs
-                            |> Maybe.map (showCoverage key coverageTypes)
+                            |> Maybe.map (showCoverage key coverageInfo)
                     )
 
         coverageOverview : Html msg
@@ -390,19 +451,20 @@ view model =
     container <| coverageOverview :: sourceCoverage
 
 
-overview : ModuleMap -> Html msg
+overview : CoverageMap -> Html msg
 overview moduleMap =
     let
         ( rows, totals ) =
             moduleMap
                 |> Dict.toList
                 |> List.foldr
-                    (\( key, coverageMap ) ( rows, totals ) ->
+                    (\( moduleName, coverageInfo ) ( rows, totals ) ->
                         let
                             counts : Dict String ( Int, Int )
                             counts =
-                                computeCounts coverageMap
+                                computeCounts coverageInfo
 
+                            adjustedTotals : Dict String ( Int, Int )
                             adjustedTotals =
                                 counts
                                     |> Dict.foldl
@@ -417,10 +479,10 @@ overview moduleMap =
 
                             name =
                                 Html.a
-                                    [ Attr.href <| "#" ++ moduleToId key ]
-                                    [ Html.code [] [ Html.text key ] ]
+                                    [ Attr.href <| "#" ++ moduleToId moduleName ]
+                                    [ Html.code [] [ Html.text moduleName ] ]
                         in
-                        ( row (Just key) name counts :: rows
+                        ( row (Just moduleName) name counts :: rows
                         , adjustedTotals
                         )
                     )
@@ -444,18 +506,74 @@ heading map =
         (Html.th [] [] :: (Dict.keys map |> List.map makeHead))
 
 
-computeCounts : CoverageMap -> Dict String ( Int, Int )
+shortHumanCoverageType : String -> List (Html msg)
+shortHumanCoverageType coverageType =
+    case coverageType of
+        "caseBranches" ->
+            [ Html.code [] [ Html.text "case" ]
+            , Html.text " branches"
+            ]
+
+        "declarations" ->
+            [ Html.text "Declarations" ]
+
+        "ifElseBranches" ->
+            [ Html.code [] [ Html.text "if/else" ]
+            , Html.text " branches"
+            ]
+
+        "lambdaBodies" ->
+            [ Html.text "Lambdas" ]
+
+        "letDeclarations" ->
+            [ Html.code [] [ Html.text "let" ]
+            , Html.text " declarations"
+            ]
+
+        _ ->
+            [ Html.text "unknown" ]
+
+
+annotationToString : Annotation -> String
+annotationToString annotation =
+    case annotation of
+        Declaration _ _ ->
+            "declarations"
+
+        LetDeclaration _ ->
+            "letDeclarations"
+
+        LambdaBody _ ->
+            "lambdaBodies"
+
+        CaseBranch ->
+            "caseBranches"
+
+        IfElseBranch ->
+            "ifElseBranches"
+
+
+computeCounts : List AnnotationInfo -> Dict String ( Int, Int )
 computeCounts =
-    Dict.map
-        (always <|
-            List.foldl
-                (\region ( used, total ) ->
-                    ( used + min 1 region.count
-                    , total + 1
-                    )
+    let
+        addCount : AnnotationInfo -> Dict String ( Int, Int ) -> Dict String ( Int, Int )
+        addCount ( _, ( annotation, count ) ) acc =
+            Dict.update (annotationToString annotation)
+                (\current ->
+                    current
+                        |> Maybe.withDefault ( 0, 0 )
+                        |> sum2 ( min 1 count, 1 )
+                        |> Just
                 )
-                ( 0, 0 )
-        )
+                acc
+    in
+    List.foldl addCount emptyCountDict
+
+
+emptyCountDict : Dict String ( Int, Int )
+emptyCountDict =
+    [ "declarations", "letDeclarations", "lambdaBodies", "caseBranches", "ifElseBranches" ]
+        |> List.foldl (\k -> Dict.insert k ( 0, 0 )) Dict.empty
 
 
 sum2 : ( Int, Int ) -> ( Int, Int ) -> ( Int, Int )
@@ -479,27 +597,14 @@ showCount moduleName coverageType ( used, total ) =
         Html.td [ Attr.class "none" ]
             [ Html.text "n/a" ]
     else
-        let
-            link : Html msg -> Html msg
-            link content =
-                case moduleName of
-                    Just name ->
-                        Html.a
-                            [ Attr.href <| "#" ++ moduleCoverageId name coverageType ]
-                            [ content ]
-
-                    Nothing ->
-                        content
-        in
         Html.td []
             [ Html.div [ Attr.class "wrapper" ]
                 [ Html.div
                     [ Attr.class "info" ]
-                    [ link <|
-                        Html.text <|
-                            toString used
-                                ++ "/"
-                                ++ toString total
+                    [ Html.text <|
+                        toString used
+                            ++ "/"
+                            ++ toString total
                     ]
                 , Html.progress
                     [ Attr.max <| toString total
@@ -512,17 +617,50 @@ showCount moduleName coverageType ( used, total ) =
 
 container : List (Html msg) -> Html msg
 container content =
+    Html.node "html"
+        []
+        [ Html.node "head"
+            []
+            [ Html.node "style"
+                []
+                [ Html.text styles ]
+            , Html.node "meta" [ Attr.attribute "charset" "UTF-8" ] []
+            ]
+        , Html.body []
+            (Html.h1 [ Attr.id "top" ] [ Html.text "Coverage report" ]
+                :: content
+            )
+        ]
+
+
+moduleToId : String -> String
+moduleToId =
+    String.toLower >> String.split "." >> String.join "-"
+
+
+showCoverage : String -> List AnnotationInfo -> String -> Html msg
+showCoverage moduleName coverageInfo source =
     let
-        containerContent =
-            Html.div [ Attr.class "container" ]
-                (Html.node "style"
-                    []
-                    [ Html.text styles ]
-                    :: Html.h1 [ Attr.id "top" ] [ Html.text "Coverage report" ]
-                    :: content
-                )
+        fileIndex =
+            index source
     in
-    containerContent
+    Html.div [ Attr.class "file" ]
+        [ Html.h2 [ Attr.id <| moduleToId moduleName ]
+            [ Html.text "Module: "
+            , Html.code [] [ Html.text moduleName ]
+            , Html.a [ Attr.class "toTop", Attr.href "#top" ] [ Html.text "▲" ]
+            ]
+        , process (moduleToId moduleName) source fileIndex coverageInfo
+        ]
+
+
+process : String -> String -> Index -> List AnnotationInfo -> Html msg
+process coverageId input index regions =
+    let
+        markerDict =
+            toMarkerDict regions index
+    in
+    markup coverageId input markerDict
 
 
 styles : String
@@ -540,7 +678,7 @@ code {
     font-size: 0.9em;
 }
 
-.container {
+body {
     margin: 0 30px;
     color: #333333;
     font-family: "Fira Sans", sans-serif;
@@ -680,138 +818,3 @@ body {
     background-color: #fdfdfd;
 }
 """
-
-
-shortHumanCoverageType : String -> List (Html msg)
-shortHumanCoverageType coverageType =
-    case coverageType of
-        "caseBranches" ->
-            [ Html.code [] [ Html.text "case" ]
-            , Html.text " branches"
-            ]
-
-        "declarations" ->
-            [ Html.text "Declarations" ]
-
-        "ifElseBranches" ->
-            [ Html.code [] [ Html.text "if/else" ]
-            , Html.text " branches"
-            ]
-
-        "lambdaBodies" ->
-            [ Html.text "Lambdas" ]
-
-        "letDeclarations" ->
-            [ Html.code [] [ Html.text "let" ]
-            , Html.text " declarations"
-            ]
-
-        _ ->
-            [ Html.text "unknown" ]
-
-
-humanCoverageType : String -> Html msg
-humanCoverageType coverageType =
-    case coverageType of
-        "caseBranches" ->
-            Html.span []
-                [ Html.code [] [ Html.text "case..of" ]
-                , Html.text " branches entered"
-                ]
-
-        "declarations" ->
-            Html.text "Top-level declarations evaluated"
-
-        "ifElseBranches" ->
-            Html.span []
-                [ Html.code [] [ Html.text "if/else" ]
-                , Html.text " branches entered"
-                ]
-
-        "lambdaBodies" ->
-            Html.text "Anonymous functions executed"
-
-        "letDeclarations" ->
-            Html.span []
-                [ Html.code [] [ Html.text "let..in" ]
-                , Html.text " declarations evaluated"
-                ]
-
-        _ ->
-            Html.text "unknown"
-
-
-moduleToId : String -> String
-moduleToId =
-    String.toLower >> String.split "." >> String.join "-"
-
-
-moduleCoverageId : String -> String -> String
-moduleCoverageId moduleName coverageType =
-    moduleToId moduleName
-        ++ "_"
-        ++ String.toLower coverageType
-
-
-showCoverage : String -> CoverageMap -> String -> Html msg
-showCoverage moduleName coverageMap file =
-    let
-        fileIndex =
-            index file
-    in
-    Html.div [ Attr.class "file" ]
-        (Html.h2 [ Attr.id <| moduleToId moduleName ]
-            [ Html.text "Module: "
-            , Html.code [] [ Html.text moduleName ]
-            ]
-            :: (Dict.toList coverageMap
-                    |> List.filterMap
-                        (\( coverageType, regions ) ->
-                            let
-                                processedResult : Maybe (Html msg)
-                                processedResult =
-                                    process coverageId file fileIndex regions
-
-                                coverageId : String
-                                coverageId =
-                                    moduleCoverageId
-                                        moduleName
-                                        coverageType
-                            in
-                            case processedResult of
-                                Just processed ->
-                                    Just <|
-                                        Html.div []
-                                            [ Html.h3
-                                                [ Attr.id coverageId ]
-                                                [ humanCoverageType
-                                                    coverageType
-                                                , Html.a
-                                                    [ Attr.class "toTop"
-                                                    , Attr.title "To top"
-                                                    , Attr.href "#top"
-                                                    ]
-                                                    [ Html.text "▴" ]
-                                                ]
-                                            , processed
-                                            ]
-
-                                Nothing ->
-                                    Nothing
-                        )
-               )
-        )
-
-
-process : String -> String -> Index -> List Region -> Maybe (Html msg)
-process coverageId input index regions =
-    case regions of
-        [] ->
-            Nothing
-
-        _ ->
-            let
-                markerDict =
-                    toMarkerDict regions index
-            in
-            Just <| markup coverageId input markerDict

@@ -32,10 +32,10 @@
     "files": [
         "bin/",
         "bin/elm-instrument",
-        "src/",
         "lib/",
         "lib/Analyzer.js",
-        "install.js"
+        "install.js",
+        "kernel-src"
     ],
     "scripts": {
         "make:elm": "elm-make --yes src/Analyzer.elm --output lib/analyzer.js",
@@ -44,7 +44,7 @@
         "make": "npm run make:elm && npm run make:opt-astar && npm run make:opt-chareq",
         "prepublishOnly": "npm run make && npm run test",
         "test": "binwrap-test && npm run test:unit",
-	"test:unit": "mocha tests",
+	      "test:unit": "mocha tests",
         "install": "binwrap-install"
     }
 }
