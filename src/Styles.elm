@@ -1,5 +1,29 @@
 module Styles exposing (..)
 
+import Html.String as Html exposing (Html)
+import Html.String.Attributes as Attr
+import Html.String.Extra as Html
+import Service
+
+
+page : String -> String -> Service.Version -> List (Html msg) -> Html msg
+page title styles version content =
+    Html.html []
+        [ Html.head []
+            [ Html.style [] [ Html.text styles ]
+            , Html.node "meta" [ Attr.attribute "charset" "UTF-8" ] []
+            ]
+        , Html.body []
+            [ Html.header [] [ Html.h1 [ Attr.id "top" ] [ Html.text title ] ]
+            , Html.section [] content
+            , Html.footer []
+                [ Html.text "Generated with "
+                , Html.a [ Attr.href "https://github.com/zwilias/elm-coverage" ] [ Html.text "elm-coverage" ]
+                , Html.text <| "@" ++ version
+                ]
+            ]
+        ]
+
 
 general : String
 general =
@@ -21,6 +45,12 @@ body {
     color: #333333;
     font-family: "Fira Sans", sans-serif;
     background-color: #fdfdfd;
+}
+
+footer {
+    margin: 1em;
+    text-align: center;
+    font-size: 0.8em;
 }
 """
 

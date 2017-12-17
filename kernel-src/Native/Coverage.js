@@ -18,7 +18,7 @@ var _user$project$Native_Coverage = (function() {
 
     var cleanupHandler = function() {
         fs.writeFileSync(
-            "../../../../.coverage/coverage-" + process.pid + ".json",
+            "../../../../.coverage/data-" + process.pid + ".json",
             JSON.stringify(counters)
         );
     };

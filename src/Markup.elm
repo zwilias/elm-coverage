@@ -118,7 +118,7 @@ foldDeclarations moduleId { name, complexity, children, startLine } ( rows, tota
         formattedName =
             Html.a
                 [ Attr.href <| "#" ++ moduleId ++ "_" ++ toString startLine ]
-                [ Html.text <| "(" ++ toString complexity ++ ") "
+                [ Html.text <| "(" ++ toString complexity ++ ") "
                 , Html.code [] [ Html.text name ]
                 ]
     in
@@ -263,10 +263,7 @@ whitespace indent =
             []
 
         _ ->
-            [ Html.span
-                [ Attr.class "whitespace" ]
-                [ Html.text <| String.repeat indent " " ]
-            ]
+            [ Html.text <| String.repeat indent " " ]
 
 
 stringParts : String -> Content msg

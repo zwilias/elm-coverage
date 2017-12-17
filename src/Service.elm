@@ -1,7 +1,11 @@
-port module Service exposing (Service, create)
+port module Service exposing (Service, Version, create)
 
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode
+
+
+type alias Version =
+    String
 
 
 port emit : Value -> Cmd msg
@@ -16,31 +20,31 @@ type Msg input
 
 
 type alias Service input =
-    Program Never () (Msg input)
+    Program Version Version (Msg input)
 
 
 create :
-    { handle : input -> output
+    { handle : Version -> input -> output
     , receive : Decoder input
     , emit : output -> Value
     }
     -> Service input
 create settings =
-    Platform.program
-        { init = () ! []
-        , update = handle <| settings.handle >> settings.emit
+    Platform.programWithFlags
+        { init = flip (!) []
+        , update = handle settings.handle settings.emit
         , subscriptions = subscribe settings.receive
         }
 
 
-handle : (input -> Value) -> Msg input -> a -> ( a, Cmd msg )
-handle handler msg model =
+handle : (Version -> input -> output) -> (output -> Value) -> Msg input -> Version -> ( Version, Cmd msg )
+handle handler encode msg version =
     case msg of
         Receive input ->
-            ( model, emit <| handler input )
+            ( version, emit <| encode <| handler version input )
 
         Bad val ->
-            ( model
+            ( version
             , emit <|
                 Encode.object
                     [ ( "type", Encode.string "error" )

@@ -4,7 +4,6 @@ import Coverage
 import Dict.LLRB as Dict exposing (Dict)
 import Html.String as Html exposing (Html)
 import Html.String.Attributes as Attr
-import Html.String.Extra as Html
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Markup
@@ -17,7 +16,7 @@ import Util
 main : Service Model
 main =
     Service.create
-        { handle = view >> Html.toString 0
+        { handle = \version model -> view version model |> Html.toString 0
         , emit = Encode.string
         , receive = decodeModel
         }
@@ -36,8 +35,8 @@ type alias Model =
     }
 
 
-view : Model -> Html msg
-view model =
+view : Service.Version -> Model -> Html msg
+view version model =
     model.moduleMap
         |> Dict.toList
         |> List.filterMap
@@ -46,19 +45,7 @@ view model =
                     |> Maybe.map (Markup.file key coverageInfo)
             )
         |> (::) (overview model.moduleMap)
-        |> container
-
-
-container : List (Html msg) -> Html msg
-container content =
-    Html.html []
-        [ Html.head []
-            [ Html.style [] [ Html.text styles ]
-            , Html.node "meta" [ Attr.attribute "charset" "UTF-8" ] []
-            ]
-        , Html.body []
-            (Html.h1 [ Attr.id "top" ] [ Html.text "Coverage report" ] :: content)
-        ]
+        |> Styles.page "Coverage report" styles version
 
 
 overview : Coverage.Map -> Html msg
@@ -102,11 +89,32 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
         name =
             Html.a
                 [ Attr.href <| "#" ++ moduleToId moduleName ]
-                [ Html.code [] [ Html.text moduleName ] ]
+                [ Html.text <| "(" ++ (toString <| totalComplexity coverageInfo) ++ ") "
+                , Html.code [] [ Html.text moduleName ]
+                ]
     in
     ( Overview.row name counts :: rows
     , adjustedTotals
     )
+
+
+totalComplexity : List Coverage.AnnotationInfo -> Coverage.Complexity
+totalComplexity annotations =
+    let
+        allComplexities : List Coverage.Complexity
+        allComplexities =
+            List.filterMap
+                (\( _, ( annotation, _ ) ) ->
+                    case annotation of
+                        Coverage.Declaration _ c ->
+                            Just c
+
+                        _ ->
+                            Nothing
+                )
+                annotations
+    in
+    List.sum allComplexities - List.length allComplexities + 1
 
 
 emptyCountDict : Dict String ( Int, Int )
