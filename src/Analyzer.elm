@@ -10,6 +10,7 @@ import Json.Encode as Encode
 import Markup
 import Service exposing (Service)
 import Styles
+import Util
 
 
 main : Service Model
@@ -59,11 +60,6 @@ container content =
         ]
 
 
-mapBoth : (a -> a -> a) -> ( a, a ) -> ( a, a ) -> ( a, a )
-mapBoth f ( a, b ) ( x, y ) =
-    ( f a x, f b y )
-
-
 overview : Coverage.Map -> Html msg
 overview moduleMap =
     let
@@ -75,7 +71,7 @@ overview moduleMap =
     Html.table [ Attr.class "overview" ]
         [ Html.thead [] [ heading totals ]
         , Html.tbody [] rows
-        , Html.tfoot [] [ row Nothing (Html.text "total") totals ]
+        , Html.tfoot [] [ row (Html.text "total") totals ]
         ]
 
 
@@ -92,7 +88,7 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
         adjustTotals : String -> ( Int, Int ) -> Dict String ( Int, Int ) -> Dict String ( Int, Int )
         adjustTotals coverageType counts =
             Dict.update coverageType
-                (Maybe.map (mapBoth (+) counts)
+                (Maybe.map (Util.mapBoth (+) counts)
                     >> Maybe.withDefault counts
                     >> Just
                 )
@@ -107,7 +103,7 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
                 [ Attr.href <| "#" ++ moduleToId moduleName ]
                 [ Html.code [] [ Html.text moduleName ] ]
     in
-    ( row (Just moduleName) name counts :: rows
+    ( row name counts :: rows
     , adjustedTotals
     )
 
@@ -179,7 +175,7 @@ computeCounts =
                 (\current ->
                     current
                         |> Maybe.withDefault ( 0, 0 )
-                        |> mapBoth (+) ( min count 1, 1 )
+                        |> Util.mapBoth (+) ( min count 1, 1 )
                         |> Just
                 )
                 acc
@@ -193,16 +189,16 @@ emptyCountDict =
         |> List.foldl (\k -> Dict.insert k ( 0, 0 )) Dict.empty
 
 
-row : Maybe String -> Html msg -> Dict String ( Int, Int ) -> Html msg
-row moduleName name counts =
+row : Html msg -> Dict String ( Int, Int ) -> Html msg
+row name counts =
     Html.tr []
         (Html.th [] [ name ]
-            :: (Dict.toList counts |> List.map (uncurry <| showCount moduleName))
+            :: (Dict.toList counts |> List.map (uncurry showCount))
         )
 
 
-showCount : Maybe String -> String -> ( Int, Int ) -> Html msg
-showCount moduleName coverageType ( used, total ) =
+showCount : String -> ( Int, Int ) -> Html msg
+showCount coverageType ( used, total ) =
     if total == 0 then
         Html.td [ Attr.class "none" ]
             [ Html.text "n/a" ]

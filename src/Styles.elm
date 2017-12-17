@@ -47,10 +47,10 @@ file =
 }
 
 .covered {
-    background-color: #83dc83;
+    background-color: #aef5ae;
     color: #202020;
-    box-shadow: 0 0 0 2px #83dc83;
-    border-bottom: 1px solid #83dc83;
+    box-shadow: 0 0 0 2px #aef5ae;
+    border-bottom: 1px solid #aef5ae;
 }
 
 .uncovered {
@@ -104,6 +104,12 @@ file =
 .source {
     flex: 1;
     overflow: scroll;
+}
+
+.legend {
+    text-align: center;
+    font-size: 0.9em;
+    margin-bottom: 2em;
 }
 """
 

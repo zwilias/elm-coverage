@@ -5,17 +5,17 @@ import Dict.LLRB as Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder)
 
 
-type Position
-    = Position ( Int, Int )
+type alias Position =
+    ( Int, Int )
 
 
 line : Position -> Int
-line (Position ( l, _ )) =
+line ( l, _ ) =
     l
 
 
 column : Position -> Int
-column (Position ( _, c )) =
+column ( _, c ) =
     c
 
 
@@ -61,8 +61,8 @@ regionDecoder =
                 (Decode.field "column" Decode.int)
     in
     Decode.map2 Region
-        (Decode.field "from" <| Decode.map Position position)
-        (Decode.field "to" <| Decode.map Position position)
+        (Decode.field "from" position)
+        (Decode.field "to" position)
 
 
 annotationInfoDecoder : Decoder AnnotationInfo
