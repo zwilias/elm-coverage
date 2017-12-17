@@ -43,6 +43,81 @@ type Annotation
     | IfElseBranch
 
 
+declaration : String
+declaration =
+    "declaration"
+
+
+letDeclaration : String
+letDeclaration =
+    "letDeclaration"
+
+
+lambdaBody : String
+lambdaBody =
+    "lambdaBody"
+
+
+caseBranch : String
+caseBranch =
+    "caseBranch"
+
+
+ifElseBranch : String
+ifElseBranch =
+    "ifElseBranch"
+
+
+annotationType : Annotation -> String
+annotationType annotation =
+    case annotation of
+        Declaration _ _ ->
+            declaration
+
+        LetDeclaration _ ->
+            letDeclaration
+
+        LambdaBody _ ->
+            lambdaBody
+
+        CaseBranch ->
+            caseBranch
+
+        IfElseBranch ->
+            ifElseBranch
+
+
+fromAnnotation :
+    { declaration : a
+    , letDeclaration : a
+    , lambdaBody : a
+    , caseBranch : a
+    , ifElseBranch : a
+    , default : a
+    }
+    -> String
+    -> a
+fromAnnotation settings annotation =
+    case annotation of
+        "declaration" ->
+            settings.declaration
+
+        "letDeclaration" ->
+            settings.letDeclaration
+
+        "lambdaBody" ->
+            settings.lambdaBody
+
+        "caseBranch" ->
+            settings.caseBranch
+
+        "ifElseBranch" ->
+            settings.ifElseBranch
+
+        _ ->
+            settings.default
+
+
 type alias Located a =
     ( Region, a )
 

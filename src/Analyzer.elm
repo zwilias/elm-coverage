@@ -8,6 +8,7 @@ import Html.String.Extra as Html
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Markup
+import Overview
 import Service exposing (Service)
 import Styles
 import Util
@@ -69,9 +70,9 @@ overview moduleMap =
                 |> List.foldr foldFile ( [], Dict.empty )
     in
     Html.table [ Attr.class "overview" ]
-        [ Html.thead [] [ heading totals ]
+        [ Html.thead [] [ Overview.heading totals ]
         , Html.tbody [] rows
-        , Html.tfoot [] [ row (Html.text "total") totals ]
+        , Html.tfoot [] [ Overview.row (Html.text "total") totals ]
         ]
 
 
@@ -83,7 +84,7 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
     let
         counts : Dict String ( Int, Int )
         counts =
-            computeCounts coverageInfo
+            Overview.computeCounts emptyCountDict coverageInfo
 
         adjustTotals : String -> ( Int, Int ) -> Dict String ( Int, Int ) -> Dict String ( Int, Int )
         adjustTotals coverageType counts =
@@ -103,122 +104,20 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
                 [ Attr.href <| "#" ++ moduleToId moduleName ]
                 [ Html.code [] [ Html.text moduleName ] ]
     in
-    ( row name counts :: rows
+    ( Overview.row name counts :: rows
     , adjustedTotals
     )
 
 
-heading : Dict String a -> Html msg
-heading map =
-    let
-        makeHead : String -> Html msg
-        makeHead =
-            shortHumanCoverageType >> Html.th []
-    in
-    Html.tr []
-        (Html.th [] [] :: (Dict.keys map |> List.map makeHead))
-
-
-shortHumanCoverageType : String -> List (Html msg)
-shortHumanCoverageType coverageType =
-    case coverageType of
-        "caseBranches" ->
-            [ Html.code [] [ Html.text "case" ]
-            , Html.text " branches"
-            ]
-
-        "declarations" ->
-            [ Html.text "Declarations" ]
-
-        "ifElseBranches" ->
-            [ Html.code [] [ Html.text "if/else" ]
-            , Html.text " branches"
-            ]
-
-        "lambdaBodies" ->
-            [ Html.text "Lambdas" ]
-
-        "letDeclarations" ->
-            [ Html.code [] [ Html.text "let" ]
-            , Html.text " declarations"
-            ]
-
-        _ ->
-            [ Html.text "unknown" ]
-
-
-annotationToString : Coverage.Annotation -> String
-annotationToString annotation =
-    case annotation of
-        Coverage.Declaration _ _ ->
-            "declarations"
-
-        Coverage.LetDeclaration _ ->
-            "letDeclarations"
-
-        Coverage.LambdaBody _ ->
-            "lambdaBodies"
-
-        Coverage.CaseBranch ->
-            "caseBranches"
-
-        Coverage.IfElseBranch ->
-            "ifElseBranches"
-
-
-computeCounts : List Coverage.AnnotationInfo -> Dict String ( Int, Int )
-computeCounts =
-    let
-        addCount : Coverage.AnnotationInfo -> Dict String ( Int, Int ) -> Dict String ( Int, Int )
-        addCount ( _, ( annotation, count ) ) acc =
-            Dict.update (annotationToString annotation)
-                (\current ->
-                    current
-                        |> Maybe.withDefault ( 0, 0 )
-                        |> Util.mapBoth (+) ( min count 1, 1 )
-                        |> Just
-                )
-                acc
-    in
-    List.foldl addCount emptyCountDict
-
-
 emptyCountDict : Dict String ( Int, Int )
 emptyCountDict =
-    [ "declarations", "letDeclarations", "lambdaBodies", "caseBranches", "ifElseBranches" ]
+    [ Coverage.declaration
+    , Coverage.letDeclaration
+    , Coverage.lambdaBody
+    , Coverage.caseBranch
+    , Coverage.ifElseBranch
+    ]
         |> List.foldl (\k -> Dict.insert k ( 0, 0 )) Dict.empty
-
-
-row : Html msg -> Dict String ( Int, Int ) -> Html msg
-row name counts =
-    Html.tr []
-        (Html.th [] [ name ]
-            :: (Dict.toList counts |> List.map (uncurry showCount))
-        )
-
-
-showCount : String -> ( Int, Int ) -> Html msg
-showCount coverageType ( used, total ) =
-    if total == 0 then
-        Html.td [ Attr.class "none" ]
-            [ Html.text "n/a" ]
-    else
-        Html.td []
-            [ Html.div [ Attr.class "wrapper" ]
-                [ Html.div
-                    [ Attr.class "info" ]
-                    [ Html.text <|
-                        toString used
-                            ++ "/"
-                            ++ toString total
-                    ]
-                , Html.progress
-                    [ Attr.max <| toString total
-                    , Attr.value <| toString used
-                    ]
-                    []
-                ]
-            ]
 
 
 moduleToId : String -> String

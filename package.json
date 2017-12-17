@@ -1,6 +1,6 @@
 {
     "name": "elm-coverage",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "license": "BSD-3-Clause",
     "homepage": "https://github.com/zwilias/elm-coverage#readme",
     "repository": "zwilias/elm-coverage",
@@ -44,7 +44,7 @@
         "make": "npm run make:elm && npm run make:opt-astar && npm run make:opt-chareq",
         "prepublishOnly": "npm run make && npm run test",
         "test": "binwrap-test && npm run test:unit",
-	      "test:unit": "mocha tests",
+        "test:unit": "mocha tests",
         "install": "binwrap-install"
     }
 }
