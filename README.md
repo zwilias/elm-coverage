@@ -24,7 +24,7 @@ Installation
 Installing `elm-coverage` works much the same way as installing other tools in
 the Elm ecosystem:
 
-    npm i -g elm-coverage@beta
+    npm i -g elm-coverage
 
 Usage
 -----
