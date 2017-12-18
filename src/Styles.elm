@@ -52,6 +52,10 @@ footer {
     text-align: center;
     font-size: 0.8em;
 }
+
+a {
+    font-weight: normal;
+}
 """
 
 
