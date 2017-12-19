@@ -226,9 +226,44 @@ showLine coverageId lineNr info =
         lineId =
             coverageId ++ "_" ++ toString lineNr
     in
-    Html.a
-        [ Attr.href <| "#" ++ lineId, Attr.id lineId, Attr.class "line" ]
-        [ Html.text <| toString <| lineNr ]
+    Html.a [ Attr.href <| "#" ++ lineId, Attr.id lineId, Attr.class "line" ]
+        [ Html.div []
+            (rFilterMap indicator info
+                ++ [ Html.text <| toString <| lineNr ]
+            )
+        ]
+
+
+rFilterMap : (a -> Maybe b) -> List a -> List b
+rFilterMap toMaybe =
+    List.foldl
+        (\x acc ->
+            case toMaybe x of
+                Just ok ->
+                    ok :: acc
+
+                Nothing ->
+                    acc
+        )
+        []
+
+
+indicator : MarkerInfo -> Maybe (Html msg)
+indicator { count, annotation } =
+    Coverage.complexity annotation
+        |> Maybe.map
+            (\complexity ->
+                Html.span
+                    [ Attr.class "indicator"
+                    , Attr.style
+                        [ ( "opacity"
+                          , toString <| toFloat (clamp 0 15 complexity) * 0.06666666666666
+                          )
+                        ]
+                    , Attr.title <| "Cyclomatic complexity: " ++ toString complexity
+                    ]
+                    []
+            )
 
 
 linebreak : Html msg

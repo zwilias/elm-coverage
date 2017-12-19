@@ -43,6 +43,22 @@ type Annotation
     | IfElseBranch
 
 
+complexity : Annotation -> Maybe Int
+complexity annotation =
+    case annotation of
+        Declaration _ c ->
+            Just c
+
+        LetDeclaration c ->
+            Just c
+
+        LambdaBody c ->
+            Just c
+
+        _ ->
+            Nothing
+
+
 declaration : String
 declaration =
     "declaration"

@@ -78,16 +78,17 @@ file =
     border-radius: 0.5em;
     display: flex;
     flex-direction: row;
+    padding-left: 0;
 }
 
-.covered {
+.source .covered {
     background-color: #aef5ae;
     color: #202020;
     box-shadow: 0 0 0 2px #aef5ae;
     border-bottom: 1px solid #aef5ae;
 }
 
-.uncovered {
+.source .uncovered {
     background-color: rgb(255, 30, 30);
     color: white;
     box-shadow: 0 0 0 2px rgb(255, 30, 30);
@@ -95,19 +96,19 @@ file =
     border-bottom-style: dashed;
 }
 
-.covered > .covered {
+.source .covered > .covered {
     box-shadow: none;
     background-color: initial;
     border-bottom: none;
 }
 
-.uncovered > .uncovered {
+.source .uncovered > .uncovered {
     box-shadow: none;
     border-bottom: none;
     background-color: initial;
 }
 
-.uncovered .covered {
+.source .uncovered .covered {
     background-color: transparent;
     color: inherit;
     box-shadow: none;
@@ -145,6 +146,14 @@ file =
     text-align: center;
     font-size: 0.9em;
     margin-bottom: 2em;
+}
+
+.indicator {
+    display: inline-block;
+    width: 2px;
+    height: 1.6em;
+    float: left;
+    background-color: rgb(255, 30, 30);
 }
 """
 
