@@ -152,7 +152,7 @@ toMarkerDict regions offsets =
             Maybe.map2
                 (\from to ->
                     acc
-                        |> Dict.update from (addToListDict (Begin count annotation))
+                        |> Dict.update from (addToListDict (Begin <| MarkerInfo count annotation))
                         |> Dict.update to (addToListDict End)
                 )
                 (Coverage.positionToOffset region.from offsets)
@@ -162,111 +162,228 @@ toMarkerDict regions offsets =
     List.foldl addRegion Dict.empty regions
 
 
+type alias MarkerInfo =
+    { count : Int, annotation : Coverage.Annotation }
+
+
 type Marker
-    = Begin Int Coverage.Annotation
+    = Begin MarkerInfo
     | End
 
 
 markup : String -> String -> Dict Int (List Marker) -> Html msg
 markup coverageId input markers =
-    markupHelper input 0 (Dict.toList markers) { children = [], stack = [] }
-        |> (\{ children } ->
-                Html.div [ Attr.class "coverage" ]
-                    [ Html.div [ Attr.class "source" ] (toHtml children)
-                    , Html.div [ Attr.class "lines" ] (lines coverageId input)
-                    ]
-           )
+    let
+        content : List Content
+        content =
+            .children <| markupHelper input 0 (Dict.toList markers) { children = [], stack = [] }
+
+        ( lines, rendered ) =
+            toHtml content
+                |> foldRendered coverageId
+    in
+    Html.div [ Attr.class "coverage" ]
+        [ Html.div [ Attr.class "lines" ] lines
+        , Html.div [ Attr.class "source" ] rendered
+        ]
 
 
-lines : String -> String -> List (Html msg)
-lines coverageId input =
-    input
-        |> String.lines
-        |> List.indexedMap
-            (\idx _ ->
-                let
-                    lineId : String
-                    lineId =
-                        coverageId ++ "_" ++ toString (idx + 1)
-                in
-                Html.div
-                    [ Attr.class "line", Attr.id lineId ]
-                    [ Html.a
-                        [ Attr.href <| "#" ++ lineId ]
-                        [ Html.text <| toString <| idx + 1 ]
-                    ]
+foldRendered : String -> List (Line msg) -> ( List (Html msg), List (Html msg) )
+foldRendered coverageId xs =
+    xs
+        |> indexedFoldr
+            (\idx (Line info content) ( lines, sources ) ->
+                ( showLine coverageId (idx + 1) info :: lines
+                , content :: sources
+                )
             )
+            ( [], [] )
+        |> Tuple.mapSecond (intercalate linebreak)
 
 
-type alias Acc msg =
-    { children : List (Content msg)
-    , stack : List ( Int, Coverage.Annotation, List (Content msg) )
+indexedFoldr : (Int -> a -> b -> b) -> b -> List a -> b
+indexedFoldr op acc xs =
+    List.foldr
+        (\x ( idx, a ) ->
+            ( idx - 1
+            , op idx x a
+            )
+        )
+        ( List.length xs - 1, acc )
+        xs
+        |> Tuple.second
+
+
+intercalate : a -> List (List a) -> List a
+intercalate sep =
+    List.intersperse [ sep ] >> List.concat
+
+
+showLine : String -> Int -> List MarkerInfo -> Html msg
+showLine coverageId lineNr info =
+    let
+        lineId : String
+        lineId =
+            coverageId ++ "_" ++ toString lineNr
+    in
+    Html.a
+        [ Attr.href <| "#" ++ lineId, Attr.id lineId, Attr.class "line" ]
+        [ Html.text <| toString <| lineNr ]
+
+
+linebreak : Html msg
+linebreak =
+    Html.br [] []
+
+
+type alias Acc =
+    { children : List Content
+    , stack : List ( MarkerInfo, List Content )
     }
 
 
 type Part
     = Part String
     | LineBreak
-    | Indent Int
     | Indented Int String
 
 
-type Content msg
+type Content
     = Plain (List Part)
-    | Content (Html msg -> Html msg) (List (Content msg))
+    | Content MarkerInfo (List Content)
 
 
-wrap : (List (Html msg) -> Html msg) -> List (Content msg) -> Content msg
-wrap wrapper content =
-    Content (List.singleton >> wrapper) content
-
-
-toHtml : List (Content msg) -> List (Html msg)
+toHtml : List Content -> List (Line msg)
 toHtml content =
-    List.concatMap (contentToHtml identity) content
-        |> List.reverse
+    let
+        initialAcc : ToHtmlAcc msg
+        initialAcc =
+            { lineSoFar = Line [] []
+            , stack = []
+            , lines = []
+            }
+
+        finalize : ToHtmlAcc msg -> List (Line msg)
+        finalize { lineSoFar, lines } =
+            lineSoFar :: lines
+    in
+    List.foldl contentToHtml initialAcc content
+        |> finalize
 
 
-contentToHtml : (Html msg -> Html msg) -> Content msg -> List (Html msg)
-contentToHtml tagger content =
+type alias ToHtmlAcc msg =
+    { lineSoFar : Line msg
+    , stack : List MarkerInfo
+    , lines : List (Line msg)
+    }
+
+
+type Line msg
+    = Line (List MarkerInfo) (List (Html msg))
+
+
+contentToHtml : Content -> ToHtmlAcc msg -> ToHtmlAcc msg
+contentToHtml content acc =
     case content of
         Plain parts ->
-            List.concatMap (partToHtml tagger) parts
+            partsToHtml parts acc
 
-        Content wrapper parts ->
-            List.concatMap (contentToHtml (wrapper >> tagger)) parts
-
-
-partToHtml : (Html msg -> Html msg) -> Part -> List (Html msg)
-partToHtml tagger part =
-    case part of
-        Part s ->
-            if String.isEmpty s then
-                []
-            else
-                [ tagger <| Html.text s ]
-
-        LineBreak ->
-            [ Html.br [] [] ]
-
-        Indent indent ->
-            whitespace indent
-
-        Indented indent content ->
-            (tagger <| Html.text content) :: whitespace indent
+        Content marker parts ->
+            List.foldl contentToHtml (pushStack marker acc) parts
+                |> popStack
 
 
-whitespace : Int -> List (Html msg)
+pushStack : MarkerInfo -> ToHtmlAcc msg -> ToHtmlAcc msg
+pushStack marker acc =
+    { acc
+        | stack = marker :: acc.stack
+        , lineSoFar = addMarkerToLine marker acc.lineSoFar
+    }
+
+
+popStack : ToHtmlAcc msg -> ToHtmlAcc msg
+popStack acc =
+    case acc.stack of
+        [] ->
+            acc
+
+        _ :: rest ->
+            { acc | stack = rest }
+
+
+partsToHtml : List Part -> ToHtmlAcc msg -> ToHtmlAcc msg
+partsToHtml parts acc =
+    case parts of
+        [] ->
+            acc
+
+        (Part "") :: rest ->
+            partsToHtml rest acc
+
+        (Part s) :: rest ->
+            tagAndAdd s acc
+                |> partsToHtml rest
+
+        LineBreak :: rest ->
+            newLine acc
+                |> partsToHtml rest
+
+        (Indented indent content) :: rest ->
+            acc
+                |> tagAndAdd content
+                |> add (whitespace indent)
+                |> partsToHtml rest
+
+
+add : Html msg -> ToHtmlAcc msg -> ToHtmlAcc msg
+add content acc =
+    { acc | lineSoFar = addToLine content acc.lineSoFar }
+
+
+addMarkerToLine : MarkerInfo -> Line msg -> Line msg
+addMarkerToLine marker (Line info content) =
+    Line (marker :: info) content
+
+
+tagAndAdd : String -> ToHtmlAcc msg -> ToHtmlAcc msg
+tagAndAdd content acc =
+    add (tagWith acc.stack content identity) acc
+
+
+addToLine : Html msg -> Line msg -> Line msg
+addToLine x (Line info xs) =
+    Line info (x :: xs)
+
+
+{-| We need to use this rather than inlining `wrapper << tagger` to prevent
+a nasty variable shadowing bug.
+-}
+wrapTagger : MarkerInfo -> (Html msg -> Html msg) -> Html msg -> Html msg
+wrapTagger { count, annotation } tagger content =
+    wrapper count annotation <| tagger content
+
+
+tagWith : List MarkerInfo -> String -> (Html msg -> Html msg) -> Html msg
+tagWith markers s tagger =
+    case markers of
+        [] ->
+            tagger <| Html.text s
+
+        marker :: rest ->
+            tagWith rest s (wrapTagger marker tagger)
+
+
+newLine : ToHtmlAcc msg -> ToHtmlAcc msg
+newLine acc =
+    { acc | lineSoFar = Line acc.stack [], lines = acc.lineSoFar :: acc.lines }
+
+
+whitespace : Int -> Html msg
 whitespace indent =
-    case indent of
-        0 ->
-            []
-
-        _ ->
-            [ Html.text <| String.repeat indent " " ]
+    Html.text <| String.repeat indent " "
 
 
-stringParts : String -> Content msg
+stringParts : String -> Content
 stringParts string =
     case String.lines string of
         [] ->
@@ -292,7 +409,7 @@ findIndent string =
         toIndentedString : Int -> Part
         toIndentedString spaces =
             if String.length string == spaces then
-                Indent spaces
+                Indented spaces ""
             else if spaces == 0 then
                 Part string
             else
@@ -305,16 +422,16 @@ findIndent string =
         |> toIndentedString
 
 
-markupHelper : String -> Int -> List ( Int, List Marker ) -> Acc msg -> Acc msg
+markupHelper : String -> Int -> List ( Int, List Marker ) -> Acc -> Acc
 markupHelper original offset markers acc =
     let
-        rest : String -> Content msg
+        rest : String -> Content
         rest input =
             input
                 |> String.slice offset (String.length input)
                 |> stringParts
 
-        readUntil : Int -> String -> Content msg
+        readUntil : Int -> String -> Content
         readUntil pos =
             String.slice offset pos >> stringParts
     in
@@ -328,17 +445,17 @@ markupHelper original offset markers acc =
                 |> markupHelper original pos otherMarkers
 
 
-consumeMarkers : List Marker -> Acc msg -> Acc msg
+consumeMarkers : List Marker -> Acc -> Acc
 consumeMarkers markers acc =
     List.foldl consumeMarker acc markers
 
 
-consumeMarker : Marker -> Acc msg -> Acc msg
+consumeMarker : Marker -> Acc -> Acc
 consumeMarker marker acc =
     case marker of
-        Begin cnt annotation ->
+        Begin markerInfo ->
             { children = []
-            , stack = ( cnt, annotation, acc.children ) :: acc.stack
+            , stack = ( markerInfo, acc.children ) :: acc.stack
             }
 
         End ->
@@ -346,21 +463,21 @@ consumeMarker marker acc =
                 [] ->
                     Debug.crash "unexpected end"
 
-                ( cnt, complexity, x ) :: xs ->
+                ( markerInfo, x ) :: xs ->
                     let
-                        content : Content msg
+                        content : Content
                         content =
-                            wrap (wrapper cnt complexity) acc.children
+                            Content markerInfo acc.children
                     in
                     { children = content :: x
                     , stack = xs
                     }
 
 
-wrapper : Int -> Coverage.Annotation -> List (Html msg) -> Html msg
-wrapper cnt annotation =
+wrapper : Int -> Coverage.Annotation -> Html msg -> Html msg
+wrapper cnt annotation content =
     let
-        content =
+        title =
             case annotation of
                 Coverage.Declaration _ c ->
                     "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
@@ -376,8 +493,9 @@ wrapper cnt annotation =
     in
     Html.span
         [ Attr.class <| toClass cnt
-        , Attr.title content
+        , Attr.title title
         ]
+        [ content ]
 
 
 toClass : Int -> String

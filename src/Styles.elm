@@ -72,12 +72,12 @@ file =
     font-size: 0.8em;
     white-space: pre;
     line-height: 1.5em;
-    background-color: #fafafa;
+    background-color: #fdfdfd;
     padding: 1em;
     border: 1px solid #D0D0D0;
     border-radius: 0.5em;
     display: flex;
-    flex-direction: row-reverse;
+    flex-direction: row;
 }
 
 .covered {
@@ -116,22 +116,23 @@ file =
 .lines {
     text-align: right;
     margin-right: 10px;
-    border-right: 1px solid #B0B0B0;
+    border-right: 1px solid #d0d0d0;
     padding-right: 10px;
     margin-top: -1em;
     padding-top: 1em;
     padding-bottom: 1em;
     margin-bottom: -1em;
-    color: #B0B0B0;
 }
 
-.lines a {
-    color: #B0B0B0;
+.lines .line {
+    display: block;
+    color: #c0c0c0;
     text-decoration: none;
     transition: all 0.3s ease;
+    font-size: 0.9em;
 }
 
-.lines a:hover {
+.lines .line:hover {
     color: #303030;
 }
 
