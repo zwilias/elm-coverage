@@ -25,7 +25,9 @@ main =
 decodeModel : Decoder Model
 decodeModel =
     Decode.map2 Model
-        (Decode.field "files" (Decode.keyValuePairs Decode.string |> Decode.map Dict.fromList))
+        (Decode.field "files"
+            (Decode.keyValuePairs Decode.string |> Decode.map Dict.fromList)
+        )
         (Decode.field "coverage" Coverage.regionsDecoder)
 
 
@@ -73,19 +75,7 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
         counts =
             Overview.computeCounts emptyCountDict coverageInfo
 
-        adjustTotals : String -> ( Int, Int ) -> Dict String ( Int, Int ) -> Dict String ( Int, Int )
-        adjustTotals coverageType counts =
-            Dict.update coverageType
-                (Maybe.map (Util.mapBoth (+) counts)
-                    >> Maybe.withDefault counts
-                    >> Just
-                )
-
-        adjustedTotals : Dict String ( Int, Int )
-        adjustedTotals =
-            counts
-                |> Dict.foldl adjustTotals totals
-
+        name : Html msg
         name =
             Html.a
                 [ Attr.href <| "#" ++ moduleToId moduleName ]
@@ -94,8 +84,21 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
                 ]
     in
     ( Overview.row name counts :: rows
-    , adjustedTotals
+    , Dict.foldl adjustTotals totals counts
     )
+
+
+adjustTotals :
+    String
+    -> ( Int, Int )
+    -> Dict String ( Int, Int )
+    -> Dict String ( Int, Int )
+adjustTotals coverageType counts =
+    Dict.update coverageType
+        (Maybe.map (Util.mapBoth (+) counts)
+            >> Maybe.withDefault counts
+            >> Just
+        )
 
 
 totalComplexity : List Coverage.AnnotationInfo -> Coverage.Complexity
@@ -104,7 +107,7 @@ totalComplexity annotations =
         allComplexities : List Coverage.Complexity
         allComplexities =
             List.filterMap
-                (\( _, ( annotation, _ ) ) ->
+                (\( _, annotation, _ ) ->
                     case annotation of
                         Coverage.Declaration _ c ->
                             Just c

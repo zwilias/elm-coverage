@@ -5,18 +5,11 @@ import Dict.LLRB as Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder)
 
 
+-- Types
+
+
 type alias Position =
     ( Int, Int )
-
-
-line : Position -> Int
-line ( l, _ ) =
-    l
-
-
-column : Position -> Int
-column ( _, c ) =
-    c
 
 
 type alias Region =
@@ -43,6 +36,14 @@ type Annotation
     | IfElseBranch
 
 
+type alias AnnotationInfo =
+    ( Region, Annotation, Int )
+
+
+
+-- Extracting information from types
+
+
 complexity : Annotation -> Maybe Int
 complexity annotation =
     case annotation of
@@ -57,6 +58,108 @@ complexity annotation =
 
         _ ->
             Nothing
+
+
+line : Position -> Int
+line =
+    Tuple.first
+
+
+column : Position -> Int
+column =
+    Tuple.second
+
+
+position : Decoder Position
+position =
+    Decode.map2 (,)
+        (Decode.field "line" Decode.int)
+        (Decode.field "column" Decode.int)
+
+
+regionDecoder : Decoder Region
+regionDecoder =
+    Decode.map2 Region
+        (Decode.field "from" position)
+        (Decode.field "to" position)
+
+
+annotationInfoDecoder : Decoder AnnotationInfo
+annotationInfoDecoder =
+    Decode.map3 (,,)
+        regionDecoder
+        annotationDecoder
+        evaluationCountDecoder
+
+
+evaluationCountDecoder : Decoder Int
+evaluationCountDecoder =
+    Decode.oneOf [ Decode.field "count" Decode.int, Decode.succeed 0 ]
+
+
+typeIs : String -> Decoder a -> Decoder a
+typeIs expectedValue decoder =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\actual ->
+                if actual == expectedValue then
+                    decoder
+                else
+                    Decode.fail "not this one"
+            )
+
+
+annotationDecoder : Decoder Annotation
+annotationDecoder =
+    Decode.oneOf
+        [ typeIs "declaration" declarationDecoder
+        , typeIs "letDeclaration" (withComplexity LetDeclaration)
+        , typeIs "lambdaBody" (withComplexity LambdaBody)
+        , typeIs "caseBranch" (Decode.succeed CaseBranch)
+        , typeIs "ifElseBranch" (Decode.succeed IfElseBranch)
+        ]
+
+
+withComplexity : (Complexity -> a) -> Decoder a
+withComplexity tag =
+    Decode.map tag (Decode.field "complexity" Decode.int)
+
+
+declarationDecoder : Decoder Annotation
+declarationDecoder =
+    Decode.map2 Declaration
+        (Decode.field "name" Decode.string)
+        (Decode.field "complexity" Decode.int)
+
+
+regionsDecoder : Decoder Map
+regionsDecoder =
+    Decode.keyValuePairs (Decode.list annotationInfoDecoder)
+        |> Decode.map Dict.fromList
+
+
+type alias Index =
+    Array Int
+
+
+index : String -> Index
+index input =
+    input
+        |> String.lines
+        |> List.foldl
+            (\line ( acc, sum ) ->
+                ( Array.push sum acc
+                , sum + String.length line + 1
+                )
+            )
+            ( Array.empty, 0 )
+        |> Tuple.first
+
+
+positionToOffset : Position -> Index -> Maybe Int
+positionToOffset position idx =
+    Array.get (line position - 1) idx
+        |> Maybe.map (\offSet -> offSet + column position - 1)
 
 
 declaration : String
@@ -132,90 +235,3 @@ fromAnnotation settings annotation =
 
         _ ->
             settings.default
-
-
-type alias Located a =
-    ( Region, a )
-
-
-type alias AnnotationInfo =
-    Located ( Annotation, Int )
-
-
-regionDecoder : Decoder Region
-regionDecoder =
-    let
-        position : Decoder ( Int, Int )
-        position =
-            Decode.map2 (,)
-                (Decode.field "line" Decode.int)
-                (Decode.field "column" Decode.int)
-    in
-    Decode.map2 Region
-        (Decode.field "from" position)
-        (Decode.field "to" position)
-
-
-annotationInfoDecoder : Decoder AnnotationInfo
-annotationInfoDecoder =
-    Decode.map2 (,)
-        regionDecoder
-        (Decode.map2 (,) annotationDecoder evaluationCountDecoder)
-
-
-evaluationCountDecoder : Decoder Int
-evaluationCountDecoder =
-    Decode.oneOf [ Decode.field "count" Decode.int, Decode.succeed 0 ]
-
-
-fieldIs : String -> String -> Decoder a -> Decoder a
-fieldIs fieldName expectedValue decoder =
-    Decode.field fieldName Decode.string
-        |> Decode.andThen
-            (\actual ->
-                if actual == expectedValue then
-                    decoder
-                else
-                    Decode.fail "not this one"
-            )
-
-
-annotationDecoder : Decoder Annotation
-annotationDecoder =
-    Decode.oneOf
-        [ fieldIs "type" "declaration" (Decode.map2 Declaration (Decode.field "name" Decode.string) (Decode.field "complexity" Decode.int))
-        , fieldIs "type" "letDeclaration" (Decode.map LetDeclaration (Decode.field "complexity" Decode.int))
-        , fieldIs "type" "lambdaBody" (Decode.map LambdaBody (Decode.field "complexity" Decode.int))
-        , fieldIs "type" "caseBranch" (Decode.succeed CaseBranch)
-        , fieldIs "type" "ifElseBranch" (Decode.succeed IfElseBranch)
-        ]
-
-
-regionsDecoder : Decoder Map
-regionsDecoder =
-    Decode.keyValuePairs (Decode.list annotationInfoDecoder)
-        |> Decode.map Dict.fromList
-
-
-type alias Index =
-    Array Int
-
-
-index : String -> Index
-index input =
-    input
-        |> String.lines
-        |> List.foldl
-            (\line ( acc, sum ) ->
-                ( Array.push sum acc
-                , sum + String.length line + 1
-                )
-            )
-            ( Array.empty, 0 )
-        |> Tuple.first
-
-
-positionToOffset : Position -> Index -> Maybe Int
-positionToOffset position idx =
-    Array.get (line position - 1) idx
-        |> Maybe.map (\offSet -> offSet + column position - 1)

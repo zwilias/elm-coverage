@@ -39,21 +39,27 @@ shortHumanCoverageType =
         }
 
 
-computeCounts : Dict String ( Int, Int ) -> List Coverage.AnnotationInfo -> Dict String ( Int, Int )
+computeCounts :
+    Dict String ( Int, Int )
+    -> List Coverage.AnnotationInfo
+    -> Dict String ( Int, Int )
 computeCounts emptyCountDict =
-    let
-        addCount : Coverage.AnnotationInfo -> Dict String ( Int, Int ) -> Dict String ( Int, Int )
-        addCount ( _, ( annotation, count ) ) acc =
-            Dict.update (Coverage.annotationType annotation)
-                (\current ->
-                    current
-                        |> Maybe.withDefault ( 0, 0 )
-                        |> Util.mapBoth (+) ( min count 1, 1 )
-                        |> Just
-                )
-                acc
-    in
     List.foldl addCount emptyCountDict
+
+
+addCount :
+    Coverage.AnnotationInfo
+    -> Dict String ( Int, Int )
+    -> Dict String ( Int, Int )
+addCount ( _, annotation, count ) acc =
+    Dict.update (Coverage.annotationType annotation)
+        (\current ->
+            current
+                |> Maybe.withDefault ( 0, 0 )
+                |> Util.mapBoth (+) ( min count 1, 1 )
+                |> Just
+        )
+        acc
 
 
 row : Html msg -> Dict String ( Int, Int ) -> Html msg

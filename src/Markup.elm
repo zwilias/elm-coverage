@@ -75,7 +75,7 @@ topLevelDeclarationInfo acc children annotations =
         [] ->
             List.reverse acc
 
-        ( { from, to }, ( Coverage.Declaration name complexity, _ ) ) :: rest ->
+        ( { from, to }, Coverage.Declaration name complexity, _ ) :: rest ->
             let
                 decl : TopLevelDecl
                 decl =
@@ -146,20 +146,25 @@ addToListDict a m =
 
 toMarkerDict : List Coverage.AnnotationInfo -> Coverage.Index -> Dict Int (List Marker)
 toMarkerDict regions offsets =
-    let
-        addRegion : Coverage.AnnotationInfo -> Dict Int (List Marker) -> Dict Int (List Marker)
-        addRegion ( region, ( annotation, count ) ) acc =
-            Maybe.map2
-                (\from to ->
-                    acc
-                        |> Dict.update from (addToListDict (Begin <| MarkerInfo count annotation))
-                        |> Dict.update to (addToListDict End)
-                )
-                (Coverage.positionToOffset region.from offsets)
-                (Coverage.positionToOffset region.to offsets)
-                |> Maybe.withDefault acc
-    in
-    List.foldl addRegion Dict.empty regions
+    List.foldl (addRegion offsets) Dict.empty regions
+
+
+addRegion :
+    Coverage.Index
+    -> Coverage.AnnotationInfo
+    -> Dict Int (List Marker)
+    -> Dict Int (List Marker)
+addRegion offsets ( location, annotation, count ) acc =
+    Maybe.map2
+        (\from to ->
+            acc
+                |> Dict.update from
+                    (addToListDict (Begin <| MarkerInfo count annotation))
+                |> Dict.update to (addToListDict End)
+        )
+        (Coverage.positionToOffset location.from offsets)
+        (Coverage.positionToOffset location.to offsets)
+        |> Maybe.withDefault acc
 
 
 type alias MarkerInfo =
