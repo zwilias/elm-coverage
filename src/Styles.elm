@@ -45,6 +45,7 @@ body {
     color: #333333;
     font-family: "Fira Sans", sans-serif;
     background-color: #fdfdfd;
+    font-size: 16px;
 }
 
 footer {
@@ -71,7 +72,7 @@ file =
     font-family: "Fira Code", monospace;
     font-size: 0.8em;
     white-space: pre;
-    line-height: 1.5em;
+    line-height: 1.2rem;
     background-color: #fdfdfd;
     padding: 1em;
     border: 1px solid #D0D0D0;
@@ -131,6 +132,7 @@ file =
     text-decoration: none;
     transition: all 0.3s ease;
     font-size: 0.9em;
+    line-height: 1.2rem;
 }
 
 .lines .line:hover {
@@ -151,7 +153,6 @@ file =
 .indicator {
     display: inline-block;
     width: 2px;
-    height: 1.6em;
     float: left;
     background-color: rgb(255, 30, 30);
 }

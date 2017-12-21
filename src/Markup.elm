@@ -262,12 +262,12 @@ indicator { count, annotation } =
                     [ Attr.class "indicator"
                     , Attr.style
                         [ ( "opacity"
-                          , toString <| toFloat (clamp 0 15 complexity) * 0.06666666666666
+                          , toString <| toFloat (clamp 0 15 complexity) * (1 / 300)
                           )
                         ]
                     , Attr.title <| "Cyclomatic complexity: " ++ toString complexity
                     ]
-                    []
+                    [ Html.text " " ]
             )
 
 
@@ -357,6 +357,7 @@ partsToHtml parts acc =
         [] ->
             acc
 
+        -- Empty part, just skip it
         (Part "") :: rest ->
             partsToHtml rest acc
 
@@ -367,6 +368,10 @@ partsToHtml parts acc =
         LineBreak :: rest ->
             newLine acc
                 |> partsToHtml rest
+
+        -- Empty part, useless markup to include, so skip it!
+        (Indented 0 "") :: rest ->
+            partsToHtml rest acc
 
         (Indented indent content) :: rest ->
             acc
