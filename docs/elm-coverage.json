@@ -1,0 +1,151 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "coverageData": {
+            "description": "Mapping of modules to coverage data.",
+            "type": "object",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/annotation"
+                    }
+                }
+            }
+        },
+        "moduleMap": {
+            "description": "Mapping of modules to filenames.",
+            "type": "object",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "additionalProperties": false,
+    "definitions": {
+        "annotation": {
+            "description": "Each annotation has a region identified by the `to` and `from` properties. These regions may be contained in other regions, but can never overlap only partially. An annotation has an option `count` property which represents the number of times this expression was evaluated. When the `count` is missing, the expression was never evaluated.",
+            "type": "object",
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/declaration"
+                },
+                {
+                    "$ref": "#/definitions/complexityAnnotation"
+                },
+                {
+                    "$ref": "#/definitions/simpleAnnotation"
+                }
+            ]
+        },
+        "declaration": {
+            "description": "A (top-level) declaration defines one (or more) values; which may be constants or functions",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "declaration"
+                    ]
+                },
+                "complexity": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "from": {
+                    "$ref": "#/definitions/location"
+                },
+                "to": {
+                    "$ref": "#/definitions/location"
+                }
+            },
+            "required": [
+                "type",
+                "complexity",
+                "name",
+                "from",
+                "to"
+            ],
+            "additionalProperties": false
+        },
+        "complexityAnnotation": {
+            "description": "Lambdas and let-declarations",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "letDeclaration",
+                        "lambdaBody"
+                    ]
+                },
+                "complexity": {
+                    "type": "integer"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "from": {
+                    "$ref": "#/definitions/location"
+                },
+                "to": {
+                    "$ref": "#/definitions/location"
+                }
+            },
+            "required": [
+                "type",
+                "complexity",
+                "from",
+                "to"
+            ],
+            "additionalProperties": false
+        },
+        "simpleAnnotation": {
+            "description": "branches",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "ifElseBranch",
+                        "caseBranch"
+                    ]
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "from": {
+                    "$ref": "#/definitions/location"
+                },
+                "to": {
+                    "$ref": "#/definitions/location"
+                }
+            },
+            "required": [
+                "type",
+                "from",
+                "to"
+            ],
+            "additionalProperties": false
+        },
+        "location": {
+            "additionalProperties": false,
+            "properties": {
+                "line": {
+                    "description": "Line number, starts at 1",
+                    "type": "integer"
+                },
+                "column": {
+                    "description": "Column, starts at 1",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "line",
+                "column"
+            ]
+        }
+    }
+}
