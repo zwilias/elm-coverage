@@ -255,6 +255,13 @@ rFilterMap toMaybe =
 
 indicator : MarkerInfo -> Maybe (Html msg)
 indicator { count, annotation } =
+    let
+        intensity : Coverage.Complexity -> Float
+        intensity complexity =
+            toFloat (clamp 0 50 complexity)
+                / 50
+                |> sqrt
+    in
     Coverage.complexity annotation
         |> Maybe.map
             (\complexity ->
@@ -262,7 +269,7 @@ indicator { count, annotation } =
                     [ Attr.class "indicator"
                     , Attr.style
                         [ ( "opacity"
-                          , toString <| toFloat (clamp 0 15 complexity) * (1 / 300)
+                          , toString <| intensity complexity
                           )
                         ]
                     , Attr.title <| "Cyclomatic complexity: " ++ toString complexity

@@ -74,7 +74,7 @@ file =
     white-space: pre;
     line-height: 1.2rem;
     background-color: #fdfdfd;
-    padding: 1em;
+    padding: 1em 0.4em;
     border: 1px solid #D0D0D0;
     border-radius: 0.5em;
     display: flex;
@@ -152,7 +152,6 @@ file =
 
 .indicator {
     display: inline-block;
-    width: 2px;
     float: left;
     background-color: rgb(255, 30, 30);
 }
