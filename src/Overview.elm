@@ -53,11 +53,9 @@ addCount :
     -> Dict String ( Int, Int )
 addCount ( _, annotation, count ) acc =
     Dict.update (Coverage.annotationType annotation)
-        (\current ->
-            current
-                |> Maybe.withDefault ( 0, 0 )
-                |> Util.mapBoth (+) ( min count 1, 1 )
-                |> Just
+        (Maybe.withDefault ( 0, 0 )
+            >> Util.mapBoth (+) ( min count 1, 1 )
+            >> Just
         )
         acc
 

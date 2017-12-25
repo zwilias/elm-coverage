@@ -20,6 +20,7 @@ module Coverage
         , line
         , positionToOffset
         , regionsDecoder
+        , totalComplexity
         )
 
 import Array.Hamt as Array exposing (Array)
@@ -84,6 +85,25 @@ complexity annotation =
             Nothing
 
 
+totalComplexity : List AnnotationInfo -> Complexity
+totalComplexity annotations =
+    let
+        allComplexities : List Complexity
+        allComplexities =
+            List.filterMap
+                (\( _, annotation, _ ) ->
+                    case annotation of
+                        Declaration _ c ->
+                            Just c
+
+                        _ ->
+                            Nothing
+                )
+                annotations
+    in
+    List.sum allComplexities - List.length allComplexities + 1
+
+
 line : Position -> Int
 line =
     Tuple.first
@@ -136,11 +156,11 @@ typeIs expectedValue decoder =
 annotationDecoder : Decoder Annotation
 annotationDecoder =
     Decode.oneOf
-        [ typeIs "declaration" declarationDecoder
-        , typeIs "letDeclaration" (withComplexity LetDeclaration)
-        , typeIs "lambdaBody" (withComplexity LambdaBody)
-        , typeIs "caseBranch" (Decode.succeed CaseBranch)
-        , typeIs "ifElseBranch" (Decode.succeed IfElseBranch)
+        [ typeIs declaration declarationDecoder
+        , typeIs letDeclaration (withComplexity LetDeclaration)
+        , typeIs lambdaBody (withComplexity LambdaBody)
+        , typeIs caseBranch (Decode.succeed CaseBranch)
+        , typeIs ifElseBranch (Decode.succeed IfElseBranch)
         ]
 
 

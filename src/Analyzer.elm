@@ -79,7 +79,10 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
         name =
             Html.a
                 [ Attr.href <| "#" ++ moduleToId moduleName ]
-                [ Html.text <| "(" ++ (toString <| totalComplexity coverageInfo) ++ ") "
+                [ Html.text <|
+                    "("
+                        ++ (toString <| Coverage.totalComplexity coverageInfo)
+                        ++ ") "
                 , Html.code [] [ Html.text moduleName ]
                 ]
     in
@@ -99,25 +102,6 @@ adjustTotals coverageType counts =
             >> Maybe.withDefault counts
             >> Just
         )
-
-
-totalComplexity : List Coverage.AnnotationInfo -> Coverage.Complexity
-totalComplexity annotations =
-    let
-        allComplexities : List Coverage.Complexity
-        allComplexities =
-            List.filterMap
-                (\( _, annotation, _ ) ->
-                    case annotation of
-                        Coverage.Declaration _ c ->
-                            Just c
-
-                        _ ->
-                            Nothing
-                )
-                annotations
-    in
-    List.sum allComplexities - List.length allComplexities + 1
 
 
 emptyCountDict : Dict String ( Int, Int )

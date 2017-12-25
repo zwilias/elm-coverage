@@ -22,12 +22,17 @@ file moduleName coverageInfo source =
             ]
         , listDeclarations (moduleToId moduleName) coverageInfo
         , Html.p [ Attr.class "legend" ]
-            [ Html.text "Declarations sorted by cyclomatic complexity, and an overview of their internal coverage." ]
+            [ Html.text "Declarations sorted by cyclomatic complexity" ]
         , process (moduleToId moduleName) source fileIndex coverageInfo
         ]
 
 
-process : String -> String -> Coverage.Index -> List Coverage.AnnotationInfo -> Html msg
+process :
+    String
+    -> String
+    -> Coverage.Index
+    -> List Coverage.AnnotationInfo
+    -> Html msg
 process coverageId input index regions =
     toMarkerDict regions index
         |> markup coverageId input
@@ -45,15 +50,19 @@ listDeclarations moduleId annotations =
             topLevelDeclarationInfo [] [] annotations
                 |> List.sortBy .complexity
                 |> List.foldl (foldDeclarations moduleId) ( [], Dict.empty, [] )
-
-        totalComplexity : Coverage.Complexity
-        totalComplexity =
-            List.sum complexities - List.length complexities + 1
     in
     Html.table [ Attr.class "overview" ]
         [ Html.thead [] [ Overview.heading totals ]
         , Html.tbody [] rows
-        , Html.tfoot [] [ Overview.row (Html.text <| "(" ++ toString totalComplexity ++ ") total") totals ]
+        , Html.tfoot []
+            [ Overview.row
+                (Html.text <|
+                    "("
+                        ++ toString (Coverage.totalComplexity annotations)
+                        ++ ") total"
+                )
+                totals
+            ]
         ]
 
 
@@ -65,7 +74,11 @@ type alias TopLevelDecl =
     }
 
 
-topLevelDeclarationInfo : List TopLevelDecl -> List Coverage.AnnotationInfo -> List Coverage.AnnotationInfo -> List TopLevelDecl
+topLevelDeclarationInfo :
+    List TopLevelDecl
+    -> List Coverage.AnnotationInfo
+    -> List Coverage.AnnotationInfo
+    -> List TopLevelDecl
 topLevelDeclarationInfo acc children annotations =
     case annotations of
         [] ->
@@ -92,13 +105,17 @@ foldDeclarations :
     -> TopLevelDecl
     -> ( List (Html msg), Dict String ( Int, Int ), List Coverage.Complexity )
     -> ( List (Html msg), Dict String ( Int, Int ), List Coverage.Complexity )
-foldDeclarations moduleId { name, complexity, children, startLine } ( rows, totals, totalComplexity ) =
+foldDeclarations moduleId declaration ( rows, totals, totalComplexity ) =
     let
         counts : Dict String ( Int, Int )
         counts =
-            Overview.computeCounts emptyCountDict children
+            Overview.computeCounts emptyCountDict declaration.children
 
-        adjustTotals : String -> ( Int, Int ) -> Dict String ( Int, Int ) -> Dict String ( Int, Int )
+        adjustTotals :
+            String
+            -> ( Int, Int )
+            -> Dict String ( Int, Int )
+            -> Dict String ( Int, Int )
         adjustTotals coverageType counts =
             Dict.update coverageType
                 (Maybe.map (Util.mapBoth (+) counts)
@@ -111,22 +128,30 @@ foldDeclarations moduleId { name, complexity, children, startLine } ( rows, tota
             counts
                 |> Dict.foldl adjustTotals totals
 
+        declarationId : String
+        declarationId =
+            "#" ++ moduleId ++ "_" ++ toString declaration.startLine
+
         formattedName =
             Html.a
-                [ Attr.href <| "#" ++ moduleId ++ "_" ++ toString startLine ]
-                [ Html.text <| "(" ++ toString complexity ++ ") "
-                , Html.code [] [ Html.text name ]
+                [ Attr.href declarationId ]
+                [ Html.text <| "(" ++ toString declaration.complexity ++ ") "
+                , Html.code [] [ Html.text declaration.name ]
                 ]
     in
     ( Overview.row formattedName counts :: rows
     , adjustedTotals
-    , complexity :: totalComplexity
+    , declaration.complexity :: totalComplexity
     )
 
 
 emptyCountDict : Dict String ( Int, Int )
 emptyCountDict =
-    [ Coverage.letDeclaration, Coverage.lambdaBody, Coverage.caseBranch, Coverage.ifElseBranch ]
+    [ Coverage.letDeclaration
+    , Coverage.lambdaBody
+    , Coverage.caseBranch
+    , Coverage.ifElseBranch
+    ]
         |> List.foldl (\k -> Dict.insert k ( 0, 0 )) Dict.empty
 
 
@@ -182,7 +207,7 @@ markup coverageId input markers =
             .children <| markupHelper input 0 (Dict.toList markers) { children = [], stack = [] }
 
         ( lines, rendered ) =
-            toHtml content
+            render content
                 |> foldRendered coverageId
     in
     Html.div [ Attr.class "coverage" ]
@@ -231,7 +256,9 @@ showLine coverageId lineNr info =
     in
     Html.a [ Attr.href <| "#" ++ lineId, Attr.id lineId, Attr.class "line" ]
         [ Html.div []
-            (rFilterMap (.annotation >> Coverage.complexity >> Maybe.map indicator) info
+            (rFilterMap
+                (.annotation >> Coverage.complexity >> Maybe.map indicator)
+                info
                 ++ [ Html.text <| toString <| lineNr ]
             )
         ]
@@ -289,8 +316,8 @@ type Content
     | Content MarkerInfo (List Content)
 
 
-toHtml : List Content -> List (Line msg)
-toHtml content =
+render : List Content -> List (Line msg)
+render content =
     let
         initialAcc : ToHtmlAcc msg
         initialAcc =
@@ -516,24 +543,28 @@ consumeMarker marker acc =
 
 
 wrapper : Int -> Coverage.Annotation -> Html msg -> Html msg
-wrapper cnt annotation content =
+wrapper count annotation content =
     let
+        withComplexity : Coverage.Complexity -> String
+        withComplexity complexity =
+            "Evaluated "
+                ++ toString count
+                ++ " times, complexity "
+                ++ toString complexity
+                ++ "."
+
+        justCount : String
+        justCount =
+            "Evaluated " ++ toString count ++ "times."
+
+        title : String
         title =
-            case annotation of
-                Coverage.Declaration _ c ->
-                    "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
-
-                Coverage.LetDeclaration c ->
-                    "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
-
-                Coverage.LambdaBody c ->
-                    "Evaluated " ++ toString cnt ++ " times, complexity " ++ toString c ++ "."
-
-                _ ->
-                    "Evaluated " ++ toString cnt ++ " times."
+            Coverage.complexity annotation
+                |> Maybe.map withComplexity
+                |> Maybe.withDefault justCount
     in
     Html.span
-        [ Attr.class <| toClass cnt
+        [ Attr.class <| toClass count
         , Attr.title title
         ]
         [ content ]
