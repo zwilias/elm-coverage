@@ -1,4 +1,4 @@
-module Styles exposing (..)
+module Styles exposing (file, general, overview, page)
 
 import Html.String as Html exposing (Html)
 import Html.String.Attributes as Attr

@@ -1,4 +1,4 @@
-module Html.String.Extra exposing (..)
+module Html.String.Extra exposing (data, head, html, style)
 
 import Html.String as Html exposing (Html)
 import Html.String.Attributes as Attr

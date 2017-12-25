@@ -29,11 +29,8 @@ file moduleName coverageInfo source =
 
 process : String -> String -> Coverage.Index -> List Coverage.AnnotationInfo -> Html msg
 process coverageId input index regions =
-    let
-        markerDict =
-            toMarkerDict regions index
-    in
-    markup coverageId input markerDict
+    toMarkerDict regions index
+        |> markup coverageId input
 
 
 moduleToId : String -> String
@@ -44,13 +41,12 @@ moduleToId =
 listDeclarations : String -> List Coverage.AnnotationInfo -> Html msg
 listDeclarations moduleId annotations =
     let
-        declarations =
+        ( rows, totals, complexities ) =
             topLevelDeclarationInfo [] [] annotations
                 |> List.sortBy .complexity
+                |> List.foldl (foldDeclarations moduleId) ( [], Dict.empty, [] )
 
-        ( rows, totals, complexities ) =
-            List.foldl (foldDeclarations moduleId) ( [], Dict.empty, [] ) declarations
-
+        totalComplexity : Coverage.Complexity
         totalComplexity =
             List.sum complexities - List.length complexities + 1
     in
@@ -75,7 +71,7 @@ topLevelDeclarationInfo acc children annotations =
         [] ->
             List.reverse acc
 
-        ( { from, to }, Coverage.Declaration name complexity, _ ) :: rest ->
+        ( { from }, Coverage.Declaration name complexity, _ ) :: rest ->
             let
                 decl : TopLevelDecl
                 decl =
@@ -168,7 +164,9 @@ addRegion offsets ( location, annotation, count ) acc =
 
 
 type alias MarkerInfo =
-    { count : Int, annotation : Coverage.Annotation }
+    { count : Int
+    , annotation : Coverage.Annotation
+    }
 
 
 type Marker
@@ -254,7 +252,7 @@ rFilterMap toMaybe =
 
 
 indicator : MarkerInfo -> Maybe (Html msg)
-indicator { count, annotation } =
+indicator { annotation } =
     let
         intensity : Coverage.Complexity -> Float
         intensity complexity =
@@ -513,7 +511,7 @@ consumeMarker marker acc =
         End ->
             case acc.stack of
                 [] ->
-                    Debug.crash "unexpected end"
+                    acc
 
                 ( markerInfo, x ) :: xs ->
                     let

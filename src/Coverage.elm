@@ -1,4 +1,26 @@
-module Coverage exposing (..)
+module Coverage
+    exposing
+        ( Annotation(..)
+        , AnnotationInfo
+        , Complexity
+        , Index
+        , Map
+        , Name
+        , Position
+        , Region
+        , annotationType
+        , caseBranch
+        , complexity
+        , declaration
+        , fromAnnotation
+        , ifElseBranch
+        , index
+        , lambdaBody
+        , letDeclaration
+        , line
+        , positionToOffset
+        , regionsDecoder
+        )
 
 import Array.Hamt as Array exposing (Array)
 import Dict.LLRB as Dict exposing (Dict)
@@ -13,7 +35,9 @@ type alias Position =
 
 
 type alias Region =
-    { from : Position, to : Position }
+    { from : Position
+    , to : Position
+    }
 
 
 type alias Map =

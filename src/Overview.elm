@@ -1,4 +1,4 @@
-module Overview exposing (..)
+module Overview exposing (computeCounts, heading, row)
 
 import Coverage
 import Dict.LLRB as Dict exposing (Dict)
@@ -66,12 +66,12 @@ row : Html msg -> Dict String ( Int, Int ) -> Html msg
 row name counts =
     Html.tr []
         (Html.th [] [ name ]
-            :: (Dict.toList counts |> List.map (uncurry showCount))
+            :: (Dict.values counts |> List.map showCount)
         )
 
 
-showCount : String -> ( Int, Int ) -> Html msg
-showCount coverageType ( used, total ) =
+showCount : ( Int, Int ) -> Html msg
+showCount ( used, total ) =
     if total == 0 then
         Html.td [ Attr.class "none" ]
             [ Html.text "n/a" ]
