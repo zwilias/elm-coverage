@@ -231,7 +231,7 @@ showLine coverageId lineNr info =
     in
     Html.a [ Attr.href <| "#" ++ lineId, Attr.id lineId, Attr.class "line" ]
         [ Html.div []
-            (rFilterMap indicator info
+            (rFilterMap (.annotation >> Coverage.complexity >> Maybe.map indicator) info
                 ++ [ Html.text <| toString <| lineNr ]
             )
         ]
@@ -251,29 +251,20 @@ rFilterMap toMaybe =
         []
 
 
-indicator : MarkerInfo -> Maybe (Html msg)
-indicator { annotation } =
+indicator : Coverage.Complexity -> Html msg
+indicator complexity =
     let
-        intensity : Coverage.Complexity -> Float
-        intensity complexity =
-            toFloat (clamp 0 50 complexity)
-                / 50
+        intensity : Float
+        intensity =
+            (toFloat (clamp 0 50 complexity) / 50)
                 |> sqrt
     in
-    Coverage.complexity annotation
-        |> Maybe.map
-            (\complexity ->
-                Html.span
-                    [ Attr.class "indicator"
-                    , Attr.style
-                        [ ( "opacity"
-                          , toString <| intensity complexity
-                          )
-                        ]
-                    , Attr.title <| "Cyclomatic complexity: " ++ toString complexity
-                    ]
-                    [ Html.text " " ]
-            )
+    Html.span
+        [ Attr.class "indicator"
+        , Attr.style [ ( "opacity", toString intensity ) ]
+        , Attr.title <| "Cyclomatic complexity: " ++ toString complexity
+        ]
+        [ Html.text " " ]
 
 
 linebreak : Html msg
