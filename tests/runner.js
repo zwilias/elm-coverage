@@ -11,6 +11,9 @@ var spawn = require("cross-spawn"),
 chai.use(require("chai-json-schema-ajv"));
 chai.use(chaiMatchPattern);
 var _ = chaiMatchPattern.getLodashModule();
+_.mixin({
+    matchesPath: (expected, actual) => actual.replace("\\", "/") === expected
+});
 
 var elmCoverage = require.resolve("../bin/elm-coverage");
 
@@ -64,7 +67,9 @@ describe("E2E tests", function() {
             generateJSON(),
             fs.readJSON(require.resolve("./data/simple/expected.json"))
         ]).spread((actual, expectedJSON) => {
-            var expected = expectedJSON;
+            var expected = {};
+
+            // Ignore runcounts
             expected.coverageData = _.mapValues(
                 expectedJSON.coverageData,
                 moduleData =>
@@ -73,6 +78,12 @@ describe("E2E tests", function() {
                             count: _.isInteger
                         })
                     )
+            );
+
+            // System agnostic paths
+            expected.moduleMap = _.mapValues(
+                expectedJSON.moduleMap,
+                modulePath => _.partial(_.matchesPath, modulePath, _)
             );
 
             expect(actual).to.matchPattern(expected);
