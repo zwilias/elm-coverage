@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-06/schema#",
     "type": "object",
     "properties": {
         "coverageData": {
@@ -45,9 +45,7 @@
             "description": "A (top-level) declaration defines one (or more) values; which may be constants or functions",
             "properties": {
                 "type": {
-                    "enum": [
-                        "declaration"
-                    ]
+                    "const": "declaration"
                 },
                 "complexity": {
                     "type": "integer"
