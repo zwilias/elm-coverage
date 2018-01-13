@@ -10,4 +10,4 @@ suite =
     test "A simple, succesfull test" <|
         \_ ->
             Main.foo
-                |> Expect.equal "hello"
+                |> Expect.equal "hello world"

@@ -1,6 +1,8 @@
 module Main exposing (..)
 
+import Native.Simple
+
 
 foo : String
 foo =
-    "hello"
+    "hello " ++ Native.Simple.foo
