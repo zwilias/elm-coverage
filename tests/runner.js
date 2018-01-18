@@ -69,6 +69,9 @@ describe("E2E tests", function() {
         ]).spread((actual, expectedJSON) => {
             var expected = {};
 
+            //expected event is "coverage"
+            expected.event = "coverage";
+
             // Ignore runcounts
             expected.coverageData = _.mapValues(
                 expectedJSON.coverageData,
