@@ -64,6 +64,6 @@ complexity of each declaration, subtracting the number of declarations and
 adding one.
 
 As such, no matter how many declarations are defined in a module, if they all
-have complexit **1**, the module will also have complexity **1**. If there is
+have complexity **1**, the module will also have complexity **1**. If there is
 one declaration with complexity **2** and one declaration with complexity **3**,
 the total complexity of that module will be **4**.
