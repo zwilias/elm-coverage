@@ -1,31 +1,31 @@
-module Coverage
-    exposing
-        ( Annotation(..)
-        , AnnotationInfo
-        , Complexity
-        , Index
-        , Map
-        , Name
-        , Position
-        , Region
-        , annotationType
-        , caseBranch
-        , complexity
-        , declaration
-        , fromAnnotation
-        , ifElseBranch
-        , index
-        , lambdaBody
-        , letDeclaration
-        , line
-        , positionToOffset
-        , regionsDecoder
-        , totalComplexity
-        )
+module Coverage exposing
+    ( Annotation(..)
+    , AnnotationInfo
+    , Complexity
+    , Index
+    , Map
+    , Name
+    , Position
+    , Region
+    , annotationType
+    , caseBranch
+    , complexity
+    , declaration
+    , fromAnnotation
+    , ifElseBranch
+    , index
+    , lambdaBody
+    , letDeclaration
+    , line
+    , positionToOffset
+    , regionsDecoder
+    , totalComplexity
+    )
 
-import Array.Hamt as Array exposing (Array)
-import Dict.LLRB as Dict exposing (Dict)
+import Array exposing (Array)
+import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Decoder)
+
 
 
 -- Types
@@ -116,7 +116,7 @@ column =
 
 position : Decoder Position
 position =
-    Decode.map2 (,)
+    Decode.map2 (\a b -> ( a, b ))
         (Decode.field "line" Decode.int)
         (Decode.field "column" Decode.int)
 
@@ -130,7 +130,7 @@ regionDecoder =
 
 annotationInfoDecoder : Decoder AnnotationInfo
 annotationInfoDecoder =
-    Decode.map3 (,,)
+    Decode.map3 (\a b c -> ( a, b, c ))
         regionDecoder
         annotationDecoder
         evaluationCountDecoder
@@ -148,6 +148,7 @@ typeIs expectedValue decoder =
             (\actual ->
                 if actual == expectedValue then
                     decoder
+
                 else
                     Decode.fail "not this one"
             )
@@ -191,9 +192,9 @@ index input =
     input
         |> String.lines
         |> List.foldl
-            (\line ( acc, sum ) ->
+            (\singleLine ( acc, sum ) ->
                 ( Array.push sum acc
-                , sum + String.length line + 1
+                , sum + String.length singleLine + 1
                 )
             )
             ( Array.empty, 0 )
@@ -201,9 +202,9 @@ index input =
 
 
 positionToOffset : Position -> Index -> Maybe Int
-positionToOffset position idx =
-    Array.get (line position - 1) idx
-        |> Maybe.map (\offSet -> offSet + column position - 1)
+positionToOffset pos idx =
+    Array.get (line pos - 1) idx
+        |> Maybe.map (\offSet -> offSet + column pos - 1)
 
 
 declaration : String

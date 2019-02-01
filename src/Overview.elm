@@ -1,7 +1,7 @@
 module Overview exposing (computeCounts, heading, row)
 
 import Coverage
-import Dict.LLRB as Dict exposing (Dict)
+import Dict exposing (Dict)
 import Html.String as Html exposing (Html)
 import Html.String.Attributes as Attr
 import Util
@@ -73,19 +73,20 @@ showCount ( used, total ) =
     if total == 0 then
         Html.td [ Attr.class "none" ]
             [ Html.text "n/a" ]
+
     else
         Html.td []
             [ Html.div [ Attr.class "wrapper" ]
                 [ Html.div
                     [ Attr.class "info" ]
                     [ Html.text <|
-                        toString used
+                        String.fromInt used
                             ++ "/"
-                            ++ toString total
+                            ++ String.fromInt total
                     ]
                 , Html.progress
-                    [ Attr.max <| toString total
-                    , Attr.value <| toString used
+                    [ Attr.max <| String.fromInt total
+                    , Attr.value <| String.fromInt used
                     ]
                     []
                 ]

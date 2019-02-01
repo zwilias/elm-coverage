@@ -30,8 +30,16 @@ create :
     }
     -> Service input
 create settings =
-    Platform.programWithFlags
-        { init = flip (!) []
+    Platform.worker
+        { init =
+            \a ->
+                (\model cmds ->
+                    ( model
+                    , Cmd.batch cmds
+                    )
+                )
+                    a
+                    []
         , update = handle settings.handle settings.emit
         , subscriptions = subscribe settings.receive
         }
@@ -62,5 +70,5 @@ subscribe decoder _ =
                     Receive input
 
                 Err e ->
-                    Bad e
+                    Bad <| Decode.errorToString e
         )

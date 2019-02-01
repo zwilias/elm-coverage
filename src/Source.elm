@@ -1,7 +1,7 @@
 module Source exposing (Content(..), Marker(..), MarkerInfo, Part(..), render)
 
 import Coverage
-import Dict.LLRB as Dict exposing (Dict)
+import Dict exposing (Dict)
 
 
 type Marker
@@ -58,6 +58,7 @@ findIndent string =
         countIndentLength c ( spaces, continue ) =
             if continue && c == ' ' then
                 ( spaces + 1, True )
+
             else
                 ( spaces, False )
 
@@ -65,8 +66,10 @@ findIndent string =
         toIndentedString spaces =
             if String.length string == spaces then
                 Indented spaces ""
+
             else if spaces == 0 then
                 Part string
+
             else
                 String.slice spaces (String.length string) string
                     |> Indented spaces
