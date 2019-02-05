@@ -1,8 +1,8 @@
-module Main exposing (..)
+module Main exposing (foo)
 
-import Native.Simple
+import Simple
 
 
 foo : String
 foo =
-    "hello " ++ Native.Simple.foo
+    "hello " ++ Simple.foo
