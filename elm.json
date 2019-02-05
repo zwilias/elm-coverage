@@ -1,8 +1,7 @@
 {
     "type": "application",
     "source-directories": [
-        "src",
-        "../elm-html-string/src"
+        "src"
     ],
     "elm-version": "0.19.0",
     "dependencies": {
@@ -11,7 +10,8 @@
             "elm/browser": "1.0.1",
             "elm/core": "1.0.0",
             "elm/html": "1.0.0",
-            "elm/json": "1.1.2"
+            "elm/json": "1.1.2",
+            "zwilias/elm-html-string": "2.0.1"
         },
         "indirect": {
             "elm/http": "1.0.0",
