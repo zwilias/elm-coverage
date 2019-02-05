@@ -13,7 +13,7 @@ page title styles version content =
             [ Html.style [] [ Html.text styles ]
             , Html.node "meta" [ Attr.attribute "charset" "UTF-8" ] []
             ]
-        , Html.body []
+        , Html.node "body" []
             [ Html.header [] [ Html.h1 [ Attr.id "top" ] [ Html.text title ] ]
             , Html.section [] content
             , Html.footer []

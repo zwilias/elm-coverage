@@ -20,7 +20,7 @@ type Msg input
 
 
 type alias Service input =
-    Program Version Version (Msg input)
+    Program Value Version (Msg input)
 
 
 create :
@@ -31,18 +31,14 @@ create :
     -> Service input
 create settings =
     Platform.worker
-        { init =
-            \a ->
-                (\model cmds ->
-                    ( model
-                    , Cmd.batch cmds
-                    )
-                )
-                    a
-                    []
+        { init = innerInit
         , update = handle settings.handle settings.emit
         , subscriptions = subscribe settings.receive
         }
+
+innerInit : Value -> (Version, Cmd msg)
+innerInit flags =
+    (Result.withDefault "1.0.0" (Decode.decodeValue (Decode.field "version" Decode.string) flags), Cmd.none)
 
 
 handle : (Version -> input -> output) -> (output -> Value) -> Msg input -> Version -> ( Version, Cmd msg )
