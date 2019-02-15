@@ -25,7 +25,10 @@ install:
   - node --version
   - npm --version
   - npm install -g elm@%ELM_VERSION% elm-test@%ELM_TEST_VERSION%
+  - elm --version && elm-test --version
   - npm ci
+  - ps: dir
+  - node foo.js
 
 
 test_script:
