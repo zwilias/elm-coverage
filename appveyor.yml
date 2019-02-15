@@ -22,7 +22,9 @@ matrix:
 
 install:
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:NODE_VERSION) $env:Platform
-  - git submodule update --init
+  - node --version
+  - npm --version
+  - npm install -g elm@%ELM_VERSION% elm-test@%ELM_TEST_VERSION%
   - npm ci
 
 
