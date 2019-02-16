@@ -1,4 +1,5 @@
-elm-stuff/
-node_modules/
-bin/elm-instrument
-unpacked_bin
+/elm-stuff/
+/node_modules/
+/bin/elm-instrument
+/unpacked_bin
+/lib/analyzer.js

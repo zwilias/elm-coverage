@@ -35,16 +35,12 @@
     },
     "files": [
         "bin/",
-        "bin/elm-instrument",
         "lib/",
-        "lib/Analyzer.js",
         "install.js",
         "kernel-src"
     ],
     "scripts": {
-        "make:elm": "elm make --optimize src/Analyzer.elm --output lib/analyzer.js",
-        "make:opt-astar": "jscodeshift -t codemods/eliminateRedundantAStar.js lib/analyzer.js",
-        "make": "npm run make:elm && npm run make:opt-astar",
+        "make": "elm make --optimize src/Analyzer.elm --output lib/analyzer.js",
         "prepublishOnly": "npm run make && npm run test",
         "test": "binwrap-test && npm run test:unit",
         "test:unit": "mocha tests",
