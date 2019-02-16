@@ -1,4 +1,7 @@
 sudo: false
 language: node_js
 node_js: "node"
+
+install: npm ci
 before_script: npm run make
+script: npm test
