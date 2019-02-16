@@ -1,6 +1,6 @@
 {
     "name": "elm-coverage",
-    "version": "0.1.7",
+    "version": "0.2.0",
     "license": "BSD-3-Clause",
     "homepage": "https://github.com/zwilias/elm-coverage#readme",
     "repository": "zwilias/elm-coverage",
@@ -9,7 +9,6 @@
         "chai": "^4.1.2",
         "chai-json-schema-ajv": "^2.0.0",
         "chai-match-pattern": "^1.1.0",
-        "jscodeshift": "^0.6.3",
         "mocha": "^4.0.1",
         "shelljs": "^0.7.8"
     },
