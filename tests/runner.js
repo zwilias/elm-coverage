@@ -15,7 +15,7 @@ _.mixin({
     matchesPath: (expected, actual) => actual.replace("\\", "/") === expected
 });
 
-var elmCoverage = require.resolve("../bin/elm-coverage");
+var elmCoverage = require.resolve( path.join("..", "bin", "elm-coverage"));
 
 describe("Sanity test", () => {
     it("prints the usage instructions when running with `--help`", done => {

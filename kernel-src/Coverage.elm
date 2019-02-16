@@ -1,8 +1,6 @@
-module Coverage exposing (..)
-
-import Native.Coverage
+module Coverage exposing (track)
 
 
-track : String -> Int -> Never a
-track =
-    Native.Coverage.track
+track : String -> Int -> ()
+track line index =
+    ()

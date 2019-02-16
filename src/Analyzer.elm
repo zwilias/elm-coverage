@@ -1,7 +1,7 @@
 module Analyzer exposing (main)
 
 import Coverage
-import Dict.LLRB as Dict exposing (Dict)
+import Dict exposing (Dict)
 import Html.String as Html exposing (Html)
 import Html.String.Attributes as Attr
 import Json.Decode as Decode exposing (Decoder)
@@ -81,8 +81,8 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
                 [ Attr.href <| "#" ++ moduleToId moduleName ]
                 [ Html.text <|
                     "("
-                        ++ (toString <| Coverage.totalComplexity coverageInfo)
-                        ++ ") "
+                        ++ (String.fromInt <| Coverage.totalComplexity coverageInfo)
+                        ++ ")\u{00A0}"
                 , Html.code [] [ Html.text moduleName ]
                 ]
     in

@@ -1,7 +1,7 @@
 module Markup exposing (file)
 
 import Coverage
-import Dict.LLRB as Dict exposing (Dict)
+import Dict exposing (Dict)
 import Html.String as Html exposing (Html)
 import Html.String.Attributes as Attr
 import Overview
@@ -53,7 +53,7 @@ listDeclarations moduleId annotations =
             [ Overview.row
                 (Html.text <|
                     "("
-                        ++ toString (Coverage.totalComplexity annotations)
+                        ++ String.fromInt (Coverage.totalComplexity annotations)
                         ++ ") total"
                 )
                 totals
@@ -111,10 +111,10 @@ foldDeclarations moduleId declaration ( rows, totals, totalComplexity ) =
             -> ( Int, Int )
             -> Dict String ( Int, Int )
             -> Dict String ( Int, Int )
-        adjustTotals coverageType counts =
+        adjustTotals coverageType innerCounts =
             Dict.update coverageType
-                (Maybe.map (Util.mapBoth (+) counts)
-                    >> Maybe.withDefault counts
+                (Maybe.map (Util.mapBoth (+) innerCounts)
+                    >> Maybe.withDefault innerCounts
                     >> Just
                 )
 
@@ -125,12 +125,12 @@ foldDeclarations moduleId declaration ( rows, totals, totalComplexity ) =
 
         declarationId : String
         declarationId =
-            "#" ++ moduleId ++ "_" ++ toString declaration.startLine
+            "#" ++ moduleId ++ "_" ++ String.fromInt declaration.startLine
 
         formattedName =
             Html.a
                 [ Attr.href declarationId ]
-                [ Html.text <| "(" ++ toString declaration.complexity ++ ") "
+                [ Html.text <| "(" ++ String.fromInt declaration.complexity ++ ")\u{00A0}"
                 , Html.code [] [ Html.text declaration.name ]
                 ]
     in
@@ -165,7 +165,7 @@ foldRendered coverageId xs =
             )
             ( [], [] )
         |> Tuple.mapSecond (Util.intercalate linebreak)
-        |> uncurry Rendered
+        |> (\( a, b ) -> Rendered a b)
 
 
 showLine : String -> Int -> List Source.MarkerInfo -> Html msg
@@ -173,14 +173,14 @@ showLine coverageId lineNr info =
     let
         lineId : String
         lineId =
-            coverageId ++ "_" ++ toString lineNr
+            coverageId ++ "_" ++ String.fromInt lineNr
     in
     Html.a [ Attr.href <| "#" ++ lineId, Attr.id lineId, Attr.class "line" ]
         [ Html.div []
             (Util.rFilterMap
                 (.annotation >> Coverage.complexity >> Maybe.map indicator)
                 info
-                ++ [ Html.text <| toString <| lineNr ]
+                ++ [ Html.text <| String.fromInt lineNr ]
             )
         ]
 
@@ -195,8 +195,8 @@ indicator complexity =
     in
     Html.span
         [ Attr.class "indicator"
-        , Attr.style [ ( "opacity", toString intensity ) ]
-        , Attr.title <| "Cyclomatic complexity: " ++ toString complexity
+        , Attr.style "opacity" (String.fromFloat intensity )
+        , Attr.title <| "Cyclomatic complexity: " ++ String.fromInt complexity
         ]
         [ Html.text " " ]
 
@@ -347,14 +347,14 @@ wrapper count annotation content =
         withComplexity : Coverage.Complexity -> String
         withComplexity complexity =
             "Evaluated "
-                ++ toString count
+                ++ String.fromInt count
                 ++ " times, complexity "
-                ++ toString complexity
+                ++ String.fromInt complexity
                 ++ "."
 
         justCount : String
         justCount =
-            "Evaluated " ++ toString count ++ "times."
+            "Evaluated " ++ String.fromInt count ++ "times."
 
         title : String
         title =
@@ -373,5 +373,6 @@ toClass : Int -> String
 toClass cnt =
     if cnt == 0 then
         "cover uncovered"
+
     else
         "cover covered"

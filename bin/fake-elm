@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+
+var yargs = require("yargs");
+var spawn = require("child_process").spawn;
+var fs = require("fs-extra");
+
+yargs
+    .command({
+        command: "$0",
+        desc: "pass through arguments to elm",
+        handler: function(args) {
+            spawn("elm", process.argv.slice(2), {stdio: 'inherit'}).on('exit', process.exit);
+        }
+    })
+    .command({
+        command: "make",
+        desc: "run elm make and then inject coverage tracking code into geneated JS output",
+        builder: function(yargs) {
+            return yargs
+                .option("output", {describe: "specify the name of the resulting JS file.", type: "string"})
+        },
+        handler: function(args) {
+            spawn("elm", process.argv.slice(2), {stdio: 'inherit'}).on('exit', function() {
+                // No output will be produced if compiling a package. However the tests should always end up as an 
+                fs.readFile(args.output, { encoding: 'utf8'} , function(err, data) {
+                    if (err) {
+                        return;
+                    }
+					var pattern = new RegExp(
+						"(^var\\s+author\\$project\\$Coverage\\$track.*$\\s+function\\s+\\()" + // function capture
+						"([a-zA-Z]+)" + // arg1
+						"\\s*,\\s*" +
+						"([a-zA-Z]+)" + // arg2
+						"\\)\\s+{$" + // end of function call
+						""
+						, "gm"
+					);
+
+                    if (!data.match(pattern)) {
+                        fs.writeFileSync("foobar.js", data);
+                    }
+                    var matches = data.match(pattern);
+                    if (!matches) {
+                        return;
+                    }
+					matches = pattern.exec(data);
+
+                    var replacement =
+                        [ "// INJECTED COVERAGE FIXTURE "
+                        , "var fs = require(\"fs\");"
+                        , "var counters = {};"
+                        , "setTimeout(function() {"
+                        , "    if (typeof app === \"undefined\") {"
+                        , "        throw \"elm-coverage error, failed to find test runner provided by elm-test\";"
+                        , "    }"
+                        , "    app.ports.send.subscribe(function(rawData) {"
+                        , "        var data = JSON.parse(rawData);"
+                        , "        if (data.type === \"FINISHED\") {"
+                        , "            fs.writeFileSync("
+                        , "                \"data-\" + process.pid + \".json\","
+                        , "                JSON.stringify(counters)"
+                        , "            );"
+                        , "        }"
+                        , "    });"
+                        , "});"
+						, ""
+                        , matches[1] + matches[2] + ", " + matches[3] + ") {"
+                        , "        counters[" + matches[2] + "] = counters["+ matches[2] + "] || [];"
+                        , "        counters[" + matches[2] + "].push(" + matches[3] + ");"
+						, ""
+                        ].join("\n");
+        
+                    var result = data.replace(pattern, replacement);
+                    fs.writeFileSync(args.output, result);
+                    process.exit();
+                })
+            
+            });
+        }
+    })
+    .argv

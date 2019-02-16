@@ -9,6 +9,7 @@ var root =
     "/";
 
 module.exports = binwrap({
+    dirname: __dirname,
     binaries: ["elm-instrument"],
     urls: {
         "darwin-x64": root + "osx-x64.tar.gz",

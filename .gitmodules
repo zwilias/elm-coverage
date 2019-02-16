@@ -1,3 +1,0 @@
-[submodule "codemods"]
-	path = codemods
-	url = https://github.com/zwilias/codemods.git
