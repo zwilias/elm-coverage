@@ -1,7 +1,7 @@
 var binwrap = require("binwrap");
 var path = require("path");
 
-var binVersion = "0.0.6";
+var binVersion = "0.0.7";
 
 var root =
     "https://github.com/zwilias/elm-instrument/releases/download/" +
