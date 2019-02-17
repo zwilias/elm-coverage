@@ -18,6 +18,7 @@ install:
   - node --version
   - npm --version
   - npm install
+  - npm install --global elm
   - npm run make
 
 test_script:
