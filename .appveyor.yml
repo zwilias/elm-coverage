@@ -6,15 +6,12 @@ environment:
 init:
   - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
-
 platform:
   - x86
   - x64
 
-
 matrix:
   fast_finish: true
-
 
 install:
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:NODE_VERSION) $env:Platform
@@ -23,9 +20,7 @@ install:
   - npm install
   - npm run make
 
-
 test_script:
   - npm test
-
 
 build: off
