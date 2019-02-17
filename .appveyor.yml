@@ -1,0 +1,24 @@
+environment:
+  matrix:
+  - NODE_VERSION: "8"
+  - NODE_VERSION: "10"
+
+platform:
+  - x86
+  - x64
+
+matrix:
+  fast_finish: true
+
+install:
+  - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:NODE_VERSION) $env:Platform
+  - node --version
+  - npm --version
+  - npm install
+  - npm install --global elm
+  - npm run make
+
+test_script:
+  - npm test
+
+build: off
