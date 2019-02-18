@@ -23,12 +23,24 @@ yargs
         desc:
             "run elm make and then inject coverage tracking code into geneated JS output",
         builder: function(yargs) {
-            return yargs.option("output", {
-                describe: "specify the name of the resulting JS file.",
-                type: "string"
-            });
+            return yargs
+                .option("output", {
+                    describe: "specify the name of the resulting JS file.",
+                    type: "string"
+                })
+                .option("report", {
+                    describe: "Report in another format",
+                    type: "string"
+                });
         },
         handler: function(args) {
+            if (args.report == "json") {
+                spawn(elmBinary, process.argv.slice(2), {
+                    stdio: "inherit"
+                }).on("exit", process.exit);
+                return;
+            }
+
             spawn(elmBinary, process.argv.slice(2), { stdio: "inherit" }).on(
                 "exit",
                 function() {
