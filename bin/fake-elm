@@ -3,9 +3,38 @@
 var yargs = require("yargs");
 var spawn = require("child_process").spawn;
 var fs = require("fs-extra");
+var path = require("path");
 var which = require("which");
 
-var elmBinary = (pathToElmBinary = which.sync("elm"));
+function findElmBinary() {
+    var found, errors = []
+    function find(name) {
+        try {
+            return which.sync(name);
+        } catch (ex) {
+            errors.push("which did not find '" + name + "'");
+        }
+    }
+
+    const elmPaths = [ 
+        // elm is installed as a dependency of elm-coverage
+        path.join(__dirname, "../node_modules/elm/unpacked_bin/elm"),
+        // elm and elm-coverage are both local dependencies of another project
+        path.join(__dirname, "../../elm/unpacked_bin/elm"),
+        // use a global elm installation
+        "elm"
+    ];
+
+    for (const elm of elmPaths) {
+        found = find(elm);
+        if (found) {
+            return found;
+        }
+    }
+
+    throw new Error('Could not find an elm executable');
+}
+var elmBinary = findElmBinary();
 
 yargs
     .command({
