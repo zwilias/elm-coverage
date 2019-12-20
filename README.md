@@ -62,7 +62,7 @@ Contribute
 ----------
 
 Issues and source code is available [on
-github](https://github.com/zwilias/elm-coverage>). The source for
+github](https://github.com/zwilias/elm-coverage). The source for
 `elm-instrument` which is used to actually instrument the sources in order to
 calculate coverage is also
 [available](https://github.com/zwilias/elm-instrument).
