@@ -5,9 +5,10 @@ var spawn = require("child_process").spawn;
 var fs = require("fs-extra");
 var which = require("which");
 
-var elmBinary = (pathToElmBinary = which.sync("elm"));
+var elmBinary = which.sync("elm");
 
 yargs
+    .version("0.19.1")
     .command({
         command: "$0",
         desc: "pass through arguments to elm",
@@ -21,7 +22,7 @@ yargs
     .command({
         command: "make",
         desc:
-            "run elm make and then inject coverage tracking code into geneated JS output",
+            "run elm make and then inject coverage tracking code into generated JS output",
         builder: function(yargs) {
             return yargs
                 .option("output", {
@@ -34,7 +35,7 @@ yargs
                 });
         },
         handler: function(args) {
-            if (args.report == "json") {
+            if (args.report == "json" || args.output == "/dev/null") {
                 spawn(elmBinary, process.argv.slice(2), {
                     stdio: "inherit"
                 }).on("exit", process.exit);
@@ -52,7 +53,7 @@ yargs
                             return;
                         }
                         var pattern = new RegExp(
-                            "(^var\\s+author\\$project\\$Coverage\\$track.*$\\s+function\\s+\\()" + // function capture
+                            "(^var\\s+\\$author\\$project\\$Coverage\\$track.*$\\s+function\\s+\\()" + // function capture
                             "([a-zA-Z]+)" + // arg1
                             "\\s*,\\s*" +
                             "([a-zA-Z]+)" + // arg2
@@ -61,9 +62,6 @@ yargs
                             "gm"
                         );
 
-                        if (!data.match(pattern)) {
-                            fs.writeFileSync("foobar.js", data);
-                        }
                         var matches = data.match(pattern);
                         if (!matches) {
                             return;
