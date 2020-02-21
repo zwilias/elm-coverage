@@ -34,13 +34,13 @@ the root of your project:
 
     elm-coverage
 
-By default, `elm-coverage` assumes that your sources exist in a separate `src/`
-directory, that you have `elm-test` installed globally, and that `elm-test`
-needs no further, special flags.
+By default, `elm-coverage` assumes that you have `elm-test` installed globally,
+and that `elm-test` needs no further, special flags.
 
-You can specify an alternative path to crawl for sources to instrument:
+You can specify an alternative path to the root directory (where elm-coverage
+will search for the `elm.json` file):
 
-    elm-coverage elm_src/
+    elm-coverage src/elm-widget/
 
 If you don't want to use a globally installed `elm-test`, you can specify the
 path to an `elm-test` executable:
