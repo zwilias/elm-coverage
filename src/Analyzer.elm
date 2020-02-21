@@ -24,16 +24,20 @@ main =
 
 decodeModel : Decoder Model
 decodeModel =
-    Decode.map2 Model
+    Decode.map3 Model
         (Decode.field "files"
             (Decode.keyValuePairs Decode.string |> Decode.map Dict.fromList)
         )
         (Decode.field "coverage" Coverage.regionsDecoder)
+        (Decode.field "presentablePathMap"
+            (Decode.keyValuePairs Decode.string |> Decode.map Dict.fromList)
+        )
 
 
 type alias Model =
     { inputs : Dict String String
     , moduleMap : Coverage.Map
+    , presentablePathMap : Dict String String
     }
 
 
@@ -43,20 +47,21 @@ view version model =
         |> Dict.toList
         |> List.filterMap
             (\( key, coverageInfo ) ->
-                Dict.get key model.inputs
-                    |> Maybe.map (Markup.file key coverageInfo)
+                Maybe.map2 (Markup.file key coverageInfo)
+                    (Dict.get key model.inputs)
+                    (Dict.get key model.presentablePathMap)
             )
-        |> (::) (overview model.moduleMap)
+        |> (::) (overview model.moduleMap model.presentablePathMap)
         |> Styles.page "Coverage report" styles version
 
 
-overview : Coverage.Map -> Html msg
-overview moduleMap =
+overview : Coverage.Map -> Dict String String -> Html msg
+overview moduleMap presentablePathMap =
     let
         ( rows, totals ) =
             moduleMap
                 |> Dict.toList
-                |> List.foldr foldFile ( [], Dict.empty )
+                |> List.foldr (foldFile presentablePathMap) ( [], Dict.empty )
     in
     Html.table [ Attr.class "overview" ]
         [ Html.thead [] [ Overview.heading totals ]
@@ -66,10 +71,11 @@ overview moduleMap =
 
 
 foldFile :
-    ( String, List Coverage.AnnotationInfo )
+    Dict String String
+    -> ( String, List Coverage.AnnotationInfo )
     -> ( List (Html msg), Dict String ( Int, Int ) )
     -> ( List (Html msg), Dict String ( Int, Int ) )
-foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
+foldFile presentablePathMap ( moduleName, coverageInfo ) ( rows, totals ) =
     let
         counts : Dict String ( Int, Int )
         counts =
@@ -83,7 +89,11 @@ foldFile ( moduleName, coverageInfo ) ( rows, totals ) =
                     "("
                         ++ (String.fromInt <| Coverage.totalComplexity coverageInfo)
                         ++ ")\u{00A0}"
-                , Html.code [] [ Html.text moduleName ]
+                , Html.code []
+                    [ Dict.get moduleName presentablePathMap
+                        |> Maybe.withDefault moduleName
+                        |> Html.text
+                    ]
                 ]
     in
     ( Overview.row name counts :: rows

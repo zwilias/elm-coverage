@@ -9,8 +9,8 @@ import Source
 import Util
 
 
-file : String -> List Coverage.AnnotationInfo -> String -> Html msg
-file moduleName coverageInfo source =
+file : String -> List Coverage.AnnotationInfo -> String -> String -> Html msg
+file moduleName coverageInfo source presentablePath =
     let
         rendered =
             Source.render source coverageInfo
@@ -20,7 +20,7 @@ file moduleName coverageInfo source =
     Html.div [ Attr.class "file" ]
         [ Html.h2 [ Attr.id <| moduleToId moduleName ]
             [ Html.text "Module: "
-            , Html.code [] [ Html.text moduleName ]
+            , Html.code [] [ Html.text presentablePath ]
             , Html.a [ Attr.class "toTop", Attr.href "#top" ] [ Html.text "▲" ]
             ]
         , listDeclarations (moduleToId moduleName) coverageInfo
@@ -195,7 +195,7 @@ indicator complexity =
     in
     Html.span
         [ Attr.class "indicator"
-        , Attr.style "opacity" (String.fromFloat intensity )
+        , Attr.style "opacity" (String.fromFloat intensity)
         , Attr.title <| "Cyclomatic complexity: " ++ String.fromInt complexity
         ]
         [ Html.text " " ]
