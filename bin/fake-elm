@@ -3,9 +3,10 @@
 var yargs = require("yargs");
 var spawn = require("child_process").spawn;
 var fs = require("fs-extra");
-var which = require("which");
 
-var elmBinary = which.sync("elm");
+const elmBinary = require('child_process')
+  .spawnSync('yarn', ['bin', 'elm'], { encoding: 'utf8' })
+  .stdout.trim()
 
 yargs
     .version("0.19.1")
