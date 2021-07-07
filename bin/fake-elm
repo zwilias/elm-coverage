@@ -8,7 +8,6 @@ const elmBinary = require('child_process')
   .spawnSync('yarn', ['bin', 'elm'], { encoding: 'utf8' })
   .stdout.trim()
 
-
 yargs
     .version("0.19.1")
     .command({
