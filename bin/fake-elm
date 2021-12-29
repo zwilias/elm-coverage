@@ -76,7 +76,7 @@ yargs
                             '    if (typeof app === "undefined") {',
                             '        throw "elm-coverage error, failed to find test runner provided by elm-test";',
                             "    }",
-                            "    app.ports.send.subscribe(function(rawData) {",
+                            "    app.ports.elmTestPort__send.subscribe(function(rawData) {",
                             "        var data = JSON.parse(rawData);",
                             '        if (data.type === "FINISHED") {',
                             "            fs.writeFileSync(",
