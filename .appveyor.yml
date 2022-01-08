@@ -4,7 +4,6 @@ environment:
   - NODE_VERSION: "14"
 
 platform:
-  - x86
   - x64
 
 matrix:
