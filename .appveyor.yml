@@ -1,7 +1,7 @@
 environment:
   matrix:
-  - NODE_VERSION: "8"
-  - NODE_VERSION: "10"
+  - NODE_VERSION: "12"
+  - NODE_VERSION: "14"
 
 platform:
   - x86
