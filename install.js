@@ -12,6 +12,7 @@ module.exports = binwrap({
     dirname: __dirname,
     binaries: ["elm-instrument"],
     urls: {
+        "darwin-arm64": root + "osx-x64.tar.gz",
         "darwin-x64": root + "osx-x64.tar.gz",
         "linux-x64": root + "linux-x64.tar.gz",
         "win32-x64": root + "windows-x64.tar.gz",
