@@ -10,7 +10,7 @@
         "chai-json-schema-ajv": "^2.0.1",
         "chai-match-pattern": "^1.1.0",
         "mocha": "^9.1.3",
-        "shelljs": "^0.7.8"
+        "shelljs": "^0.8.5"
     },
     "dependencies": {
         "binwrap": "^0.2.2",
