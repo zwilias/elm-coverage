@@ -3,7 +3,7 @@
 var yargs = require("yargs");
 var spawn = require("child_process").spawn;
 var fs = require("fs-extra");
-var which = require("which");
+var which = require("npm-which")(process.cwd());
 
 var elmBinary = which.sync("elm");
 
