@@ -37,69 +37,87 @@ describe("Sanity test", () => {
     });
 });
 
+var projects = [
+    { 
+        path: "simple", 
+        args: [],
+        generateArgs: [],
+    },
+    { 
+        path: "custom-locations", 
+        args: ["client/src", "--tests", "client/tests"],
+        generateArgs: ["client/src"],
+    }
+];
+
 describe("E2E tests", function() {
     this.timeout(Infinity);
-    it("Should run succesfully", done => {
-        var process = spawn.spawn(elmCoverage, {
-            cwd: path.join("tests", "data", "simple")
-        });
 
-        process.stderr.on("data", data => {
-            console.error(data.toString());
-        });
+    projects.forEach((project) => {
+        describe(project.path, () => {
+            it("Should run succesfully", done => {
+                var process = spawn.spawn(elmCoverage, project.args, {
+                    cwd: path.join("tests", "data", project.path)
+                });
 
-        process.on("exit", exitCode => {
-            assert.equal(exitCode, 0, "Expected to finish succesfully");
-            done();
+                process.stderr.on("data", data => {
+                    console.error(data.toString());
+                });
+
+                process.on("exit", exitCode => {
+                    assert.equal(exitCode, 0, "Expected to finish succesfully");
+                    done();
+                });
+            });
+
+            it("Should generate schema-validated JSON", () =>
+                Promise.all([
+                    fs.readJSON(require.resolve("../docs/elm-coverage.json")),
+                    generateJSON(project)
+                ]).spread((json, schema) => {
+                    expect(json).to.be.jsonSchema(schema);
+                }));
+
+            it("Should generate JSON that matches the pregenerated one, modulus runcount", () =>
+                Promise.all([
+                    generateJSON(project),
+                    fs.readJSON(require.resolve("./data/" + project.path + "/expected.json"))
+                ]).spread((actual, expectedJSON) => {
+                    var expected = {};
+
+                    //expected event is "coverage"
+                    expected.event = "coverage";
+
+                    // Ignore runcounts
+                    expected.coverageData = _.mapValues(
+                        expectedJSON.coverageData,
+                        moduleData =>
+                            _.map(moduleData, coverage =>
+                                Object.assign({}, coverage, {
+                                    count: _.isInteger
+                                })
+                            )
+                    );
+
+                    // System agnostic paths
+                    expected.moduleMap = _.mapValues(
+                        expectedJSON.moduleMap,
+                        modulePath => _.partial(_.matchesPath, modulePath, _)
+                    );
+
+                    expect(actual).to.matchPattern(expected);
+                }));
         });
     });
-
-    it("Should generate schema-validated JSON", () =>
-        Promise.all([
-            fs.readJSON(require.resolve("../docs/elm-coverage.json")),
-            generateJSON()
-        ]).spread((json, schema) => {
-            expect(json).to.be.jsonSchema(schema);
-        }));
-
-    it("Should generate JSON that matches the pregenerated one, modulus runcount", () =>
-        Promise.all([
-            generateJSON(),
-            fs.readJSON(require.resolve("./data/simple/expected.json"))
-        ]).spread((actual, expectedJSON) => {
-            var expected = {};
-
-            //expected event is "coverage"
-            expected.event = "coverage";
-
-            // Ignore runcounts
-            expected.coverageData = _.mapValues(
-                expectedJSON.coverageData,
-                moduleData =>
-                    _.map(moduleData, coverage =>
-                        Object.assign({}, coverage, {
-                            count: _.isInteger
-                        })
-                    )
-            );
-
-            // System agnostic paths
-            expected.moduleMap = _.mapValues(
-                expectedJSON.moduleMap,
-                modulePath => _.partial(_.matchesPath, modulePath, _)
-            );
-
-            expect(actual).to.matchPattern(expected);
-        }));
 });
 
-function generateJSON() {
+function generateJSON(project) {
     return new Promise((resolve, reject) => {
         var process = spawn.spawn(
             elmCoverage,
-            ["generate", "--report", "json"],
+            ["generate", ...project.generateArgs, "--report", "json"],
             {
-                cwd: path.join("tests", "data", "simple")
+                cwd: path.join("tests", "data", project.path)
             }
         );
 
