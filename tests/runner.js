@@ -43,6 +43,11 @@ var projects = [
         args: [],
         generateArgs: [],
     },
+    { 
+        path: "custom-locations", 
+        args: ["client/src", "--tests", "client/tests"],
+        generateArgs: ["client/src"],
+    }
 ];
 
 describe("E2E tests", function() {

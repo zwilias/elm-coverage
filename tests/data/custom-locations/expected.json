@@ -1,0 +1,41 @@
+{
+  "coverageData": {
+    "Simple": [
+      {
+        "type": "declaration",
+        "name": "foo",
+        "complexity": 1,
+        "from": {
+          "line": 4,
+          "column": 1
+        },
+        "to": {
+          "line": 5,
+          "column": 12
+        },
+        "count": 8
+      }
+    ],
+    "Main": [
+      {
+        "type": "declaration",
+        "name": "foo",
+        "complexity": 1,
+        "from": {
+          "line": 7,
+          "column": 1
+        },
+        "to": {
+          "line": 8,
+          "column": 27
+        },
+        "count": 8
+      }
+    ]
+  },
+  "moduleMap": {
+    "Simple": "client/src/Simple.elm",
+    "Main": "client/src/Main.elm"
+  },
+  "event": "coverage"
+}
