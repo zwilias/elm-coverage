@@ -1,6 +1,6 @@
 {
     "name": "elm-coverage",
-    "version": "0.5.0-rc1",
+    "version": "0.5.0-rc2",
     "license": "BSD-3-Clause",
     "homepage": "https://github.com/zwilias/elm-coverage#readme",
     "repository": "zwilias/elm-coverage",
@@ -36,7 +36,7 @@
     },
     "files": [
         "bin/",
-        "lib/",
+        "lib/"      ,
         "install.js",
         "kernel-src"
     ],
