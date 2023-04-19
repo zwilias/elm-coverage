@@ -7,7 +7,7 @@
     "main": "install.js",
     "devDependencies": {
         "chai": "^4.2.0",
-        "chai-json-schema-ajv": "^2.0.1",
+        "chai-json-schema-ajv": "^5.2.4",
         "chai-match-pattern": "^1.1.0",
         "mocha": "^9.1.3",
         "shelljs": "^0.8.5"
